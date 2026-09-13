@@ -58,6 +58,7 @@ class collector{
     private:
         struct allocation {// subject to change
             bool marked;
+            // this might have been a bad idea because it stores copies not references to what's allocated
             std::vector<void *> children;
             std::function<void(void *)> deallocate;
         };        
@@ -72,24 +73,25 @@ int main(){
     collector gc;
     int **p = gc.allocate<int*>();
     int **q = gc.allocate<int*>();
-    int **a = gc.allocate<int*>();
-    int **b = gc.allocate<int*>();
-    *p = new int(5);
-    *q = new int(6);
-    *a = new int(7);
-    *b = new int(8);
-    cout << **p << endl;
-    **p = 6;
-
-    cout << **p << endl;
-    cout << (*a == *b) << endl;
+    *p = gc.allocate<int>();
+    *q = gc.allocate<int>();
+    **p = 5;
+    **q = 4;
+    
+    cout << (p == q) << endl;
+    cout << (*p == *q) << endl;
+    cout << (**p == **q) << endl;
     cout << "End\n";
-
+    cout << *p << endl;
+    cout << *q << endl;
+    cout << **p << endl;
+    cout << **q << endl;
+    cout << endl;
+    
     for(auto &[_, b]: gc.metadata){
         cout << b.children.size() << endl;
-        cout << endl;
         for(int i = 0; i < b.children.size(); ++i){
-            cout << b.children[i] << endl;
+            cout << *(int *)(b.children[i]) << endl;
         }
     }
 }
