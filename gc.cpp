@@ -14,10 +14,10 @@ class collector{
         T *allocate(int array_size = 0) {
             T *ptr;
             if(array_size == 0) {
-               ptr = new T;
+               ptr = new T();
             }
             else {
-                ptr = new T[array_size];
+                ptr = new T[array_size]();
             }
 
             struct allocation alloc;
@@ -25,28 +25,46 @@ class collector{
             
             // you get the vector of void pointers during the marking phase and if they exist inside the hash map you follow them
             // otherwise you ignore them
-            if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
-                // primitive or enum — nothing to trace
-            }
-            else{
-                const int loop_size = array_size == 0 ? 1 : array_size;
-                for(int i = 0; i < loop_size; ++i){
-                    if constexpr (std::is_pointer_v<T>) {
-                        alloc.children.push_back(ptr[i]);
-                    }
-                    else {
-                        ptr[i].trace(alloc.children);
+            // forget array of void * wrong approach. we will create the void * each time in a trace function
+            // and pass it on to the marker each time.
+            alloc.trace = [array_size, ptr]() {
+                // We initialize as void * because an object can push many kinds of pointers in here not only T!
+                std::vector<void *> children;
+                if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
+                    // primitive or enum — nothing to trace
+                }
+                else{
+                    const int loop_size = array_size == 0 ? 1 : array_size;
+                    for(int i = 0; i < loop_size; ++i){
+                        if constexpr (std::is_pointer_v<T>) {
+                            children.push_back(ptr[i]);
+                        }
+                        else {
+                            ptr[i].trace(children);
+                        }
                     }
                 }
-            }
+                return children;
+            };
+
             
-            alloc.deallocate = [array_size](void *p) {
+            alloc.deallocate = [array_size, ptr]() { // previously it was passing a void* and casting that to a T. i think that was a worse approach
                 if(array_size == 0) {
-                    delete static_cast<T*>(p);
+                    delete ptr;
                 }
                 else {
-                    delete[] static_cast<T*>(p);
+                    delete[] ptr;
                 }
+            };
+
+            // for debugging:
+            // works only for primitives and arrays for now
+            alloc.print_allocation = [array_size, ptr]() {
+                const int loop_size = array_size == 0 ? 1 : array_size;
+                cout << "Allocation contents:" << endl;
+                for(int i = 0; i < loop_size; ++i){
+                    cout << ptr[i] << ' ';
+                }cout << endl;
             };
             
             metadata[ptr] = alloc;
@@ -58,12 +76,13 @@ class collector{
     private:
         struct allocation {// subject to change
             bool marked;
-            // this might have been a bad idea because it stores copies not references to what's allocated
-            std::vector<void *> children;
-            std::function<void(void *)> deallocate;
+            // room for improvement here: don't pass the entire array of pointers. Give them out one by one.
+            std::function<std::vector<void *>(void)> trace;
+            std::function<void(void)> deallocate;
+            std::function<void(void)> print_allocation;
         };        
 
-        std::unordered_map<void*, struct allocation> metadata;
+        std::unordered_map<void *, struct allocation> metadata;
 
         // temporary
         friend int main();
@@ -78,20 +97,22 @@ int main(){
     **p = 5;
     **q = 4;
     
-    cout << (p == q) << endl;
-    cout << (*p == *q) << endl;
-    cout << (**p == **q) << endl;
-    cout << "End\n";
-    cout << *p << endl;
-    cout << *q << endl;
-    cout << **p << endl;
-    cout << **q << endl;
+    cout << " pointer values: "<< endl;
+    cout << p << ' ' << *p << ' ' << **p << endl;
+    cout << q << ' ' << *q << ' ' << **q << endl;
     cout << endl;
     
+
     for(auto &[_, b]: gc.metadata){
-        cout << b.children.size() << endl;
-        for(int i = 0; i < b.children.size(); ++i){
-            cout << *(int *)(b.children[i]) << endl;
+        b.print_allocation();
+        cout << endl;
+    }
+    for(auto &[_, b]: gc.metadata){
+        std::vector<void *> ch = b.trace();
+        cout << "Number of pointers following: " << ch.size() << endl;
+        for(int i = 0; i < ch.size(); ++i){
+            cout << *(int *)(ch[i]) << endl;
         }
+        cout << endl;
     }
 }
