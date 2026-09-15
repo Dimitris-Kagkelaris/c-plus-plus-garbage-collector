@@ -6,6 +6,18 @@
 using std::cout;
 using std::endl;
 
+// consider the allocation metadata struct being the header of each allocation. and not use the hashmap.
+// You allocate sizeof(header) + sizeof(T) and then return pointer + sizeof(header).
+// If you need the metadata pointer - sizeof(header).
+// This way you avoid the overhead of the hashmap.
+// What will you put in the header:
+// same stuff as the hashmap. marked, trace, deallocate, print_allocation.
+// also a pointer to the next allocation. This way you can traverse all allocations.
+// also a pointer to the previous allocation. This way you can remove an allocation from the doubly linked list in O(1) time.
+
+// Maybe do that after you have a working version with the hashmap.
+
+
 
 class collector{
     public:
@@ -80,6 +92,9 @@ class collector{
             std::function<std::vector<void *>(void)> trace;
             std::function<void(void)> deallocate;
             std::function<void(void)> print_allocation;
+            // FOR NOW WE WILL USE STD::FUNCTION!!!
+            // possibly don't use function <> and instead use a template or a function pointer. They are more efficient.
+            // also if you move stuff arount the captured variables will be invalidated.
         };        
 
         std::unordered_map<void *, struct allocation> metadata;

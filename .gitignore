@@ -1,3 +1,5 @@
 gc
 gc.dSYM
 .DS_Store
+__exec
+__exec.dSYM
