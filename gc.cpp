@@ -13,7 +13,7 @@ using std::endl;
 // What will you put in the header:
 // same stuff as the hashmap. marked, trace, deallocate, print_allocation.
 // also a pointer to the next allocation. This way you can traverse all allocations.
-// also a pointer to the previous allocation. This way you can remove an allocation from the doubly linked list in O(1) time.
+// Singly linked list is better.
 
 // Maybe do that after you have a working version with the hashmap.
 
@@ -71,40 +71,77 @@ class collector{
 
             // for debugging:
             // works only for primitives and arrays for now
-            alloc.print_allocation = [array_size, ptr]() {
-                const int loop_size = array_size == 0 ? 1 : array_size;
-                cout << "Allocation contents:" << endl;
-                for(int i = 0; i < loop_size; ++i){
-                    cout << ptr[i] << ' ';
-                }cout << endl;
-            };
+            // alloc.print_allocation = [array_size, ptr]() {
+            //     const int loop_size = array_size == 0 ? 1 : array_size;
+            //     cout << "Allocation contents:" << endl;
+            //     for(int i = 0; i < loop_size; ++i){
+            //         cout << ptr[i] << ' ';
+            //     }cout << endl;
+            // };
             
             metadata[ptr] = alloc;
 
             return ptr;
         }
 
-
+        
     private:
-        struct allocation {// subject to change
-            bool marked;
+        struct allocation {
+            bool marked; // subject to change
             // room for improvement here: don't pass the entire array of pointers. Give them out one by one.
             std::function<std::vector<void *>(void)> trace;
             std::function<void(void)> deallocate;
             std::function<void(void)> print_allocation;
+            
             // FOR NOW WE WILL USE STD::FUNCTION!!!
-            // possibly don't use function <> and instead use a template or a function pointer. They are more efficient.
-            // also if you move stuff arount the captured variables will be invalidated.
+            // possibly don't use function <> and instead use a template or a function pointer. They are more efficient. try the template first.
+            // also if you move stuff around the captured variables will be invalidated.
         };        
-
+        
         std::unordered_map<void *, struct allocation> metadata;
-
-        // temporary
-        friend int main();
+        
+    public:
+        std::unordered_map<void *, struct allocation> get_metadata(){
+            return metadata;
+        }
 };
 
-int main(){
-    collector gc;
+class t2{
+private:
+    int *a;
+    int *b;
+    char *c;
+    int **d;
+    bool e;
+public:
+    int *ab;
+    void trace(std::vector<void *> &children){
+        children.push_back(a);
+        children.push_back(b);
+        children.push_back(c);
+        children.push_back(d);
+        children.push_back(ab);
+    }
+};
+
+void test2(collector &gc){
+    t2 *test = gc.allocate<t2>();
+    test->ab = new int(3);
+    cout << *(test->ab) << endl;
+
+
+    for(auto &[_, b]: gc.get_metadata()){
+        std::vector<void *> ch = b.trace();
+        cout << "Number of pointers following: " << ch.size() << endl;
+        for(int i = 0; i < ch.size(); ++i){
+            cout << ch[i] << endl;
+            // cout << *(int *)(ch[i]) << endl;
+        }
+        cout << endl;
+    }
+}
+
+void test1(collector &gc){
     int **p = gc.allocate<int*>();
     int **q = gc.allocate<int*>();
     *p = gc.allocate<int>();
@@ -118,11 +155,11 @@ int main(){
     cout << endl;
     
 
-    for(auto &[_, b]: gc.metadata){
+    for(auto &[_, b]: gc.get_metadata()){
         b.print_allocation();
         cout << endl;
     }
-    for(auto &[_, b]: gc.metadata){
+    for(auto &[_, b]: gc.get_metadata()){
         std::vector<void *> ch = b.trace();
         cout << "Number of pointers following: " << ch.size() << endl;
         for(int i = 0; i < ch.size(); ++i){
@@ -130,4 +167,9 @@ int main(){
         }
         cout << endl;
     }
+}
+
+int main(){
+    collector gc;
+    test2(gc);
 }
