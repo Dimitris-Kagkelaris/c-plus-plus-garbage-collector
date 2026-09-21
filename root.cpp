@@ -3,12 +3,16 @@
 using std::cout;
 using std::endl;
 
+// class root_base{ // this is created only for polymorphism reasons.
+//     virtual 
+// }
+
 template<typename T>
 class root{
     // maybe add const roots later
     public:
         root(): ptr(nullptr) {
-            registry.push_back(this);
+            registry.push_back(&ptr);
         }
         ~root() {
             registry.pop_back();
@@ -16,10 +20,10 @@ class root{
         
         
         root(const root &other_root): ptr(other_root.get_ptr()) {
-            registry.push_back(this);
+            registry.push_back(&ptr);
         }
         root(T* const other_ptr): ptr(other_ptr) {
-            registry.push_back(this);
+            registry.push_back(&ptr);
         }
         
         T* get_ptr() const {
@@ -71,30 +75,22 @@ class root{
             
             return *(ptr + i);
         }
-
-        // potentially change this later
-        static std::vector<root<T>*> get_registry() {
-            return registry;
-        }
         
     private:
         T *ptr;
-        static inline std::vector<root<T>*> registry;
-        
 };
-    
-template <typename T>
+
 void print_registry(){
-    std::vector<root<T>*> reg = root<T>::get_registry();
+    std::vector<void *> reg;
     for(int i = 0; i < reg.size(); ++i){
-        root<T>& r = *reg[i];
+        // root<T>& r = *reg[i];
         if(r != nullptr){
             std::cout << *r << std::endl;
         }
     }
 }
 
-int main(){
+void root_test1(){
     struct t {
         int a;
         char b;
@@ -105,37 +101,37 @@ int main(){
     cout << (*r).a << endl << r->b << endl;
 }
 
-// int main(){
-//     root<int> a = new int [10];
-//     for(int i = 0; i < 10; ++i){
-//         a[i] = i+1;//*(a+i)
-//         cout << a[i] << endl;
-//     }
+void root_test2(){
+    root<int> a = new int [10];
+    for(int i = 0; i < 10; ++i){
+        a[i] = i+1;//*(a+i)
+        cout << a[i] << endl;
+    }
     
-//     print_registry<int>();
-//     cout << a[5] << endl;
-//     a = new int;
-//     *a = 3;
-//     cout << *a << std::endl;
+    print_registry<int>();
+    cout << a[5] << endl;
+    a = new int;
+    *a = 3;
+    cout << *a << std::endl;
 
-// }
+}
 
-// int main(){{
-//     root<int> a = new int(6);
-//     // a = nullptr;
-//     root<int> b = new int(2);{
-//     root<int> bb = b;
+void root_test3(){{
+    root<int> a = new int(6);
+    // a = nullptr;
+    root<int> b = new int(2);{
+    root<int> bb = b;
 
-//     print_registry();
+    print_registry();
 
-// }
+}
     
-//     print_registry();
+    print_registry();
     
     
-// }
-// root<int> b = new int(4);
+}
+root<int> b = new int(4);
 
-// print_registry();
+print_registry();
     
-// }
+}

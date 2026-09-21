@@ -39,7 +39,7 @@ class collector{
             // otherwise you ignore them
             // forget array of void * wrong approach. we will create the void * each time in a trace function
             // and pass it on to the marker each time.
-            alloc.trace = [array_size, ptr]() {
+            alloc.trace = [array_size, ptr]() -> vector<void *>{
                 // We initialize as void * because an object can push many kinds of pointers in here not only T!
                 std::vector<void *> children;
                 if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
@@ -60,7 +60,7 @@ class collector{
             };
 
             
-            alloc.deallocate = [array_size, ptr]() { // previously it was passing a void* and casting that to a T. i think that was a worse approach
+            alloc.deallocate = [array_size, ptr]() -> void{ // previously it was passing a void* and casting that to a T. i think that was a worse approach
                 if(array_size == 0) {
                     delete ptr;
                 }
@@ -99,6 +99,7 @@ class collector{
         };        
         
         std::unordered_map<void *, struct allocation> metadata;
+        std::vector<void *> registry;
         
     public:
         std::unordered_map<void *, struct allocation> get_metadata(){
