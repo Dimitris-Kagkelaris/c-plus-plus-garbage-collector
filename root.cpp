@@ -18,23 +18,22 @@ class root {
         
         root(const root &other_root): ptr(other_root.get_ptr()) {
             garbage_collector->add_to_registry(&ptr);
-            registry.push_back(&ptr);
         }
         root(T* const other_ptr): ptr(other_ptr) {
             garbage_collector->add_to_registry(&ptr);
-            registry.push_back(&ptr);
         }
         
         T* get_ptr() const {
-            return ptr;
+            return static_cast<T*>(ptr);
         }
 
+        // should disable this operator in case someone creates a Root<void> and maybe some other operators as well
         T& operator*() const {
             if(ptr == nullptr){
                 throw std::logic_error("Cannot dereference a null pointer!");
             }
             
-            return *ptr;
+            return *static_cast<T*>(ptr);
         }
 
         T* operator->() const {
@@ -42,7 +41,7 @@ class root {
                 throw std::logic_error("Cannot dereference a null pointer!");
             }
             
-            return ptr;
+            return static_cast<T*>(ptr);
         }
         
         const root& operator=(T* const other_ptr) {
@@ -72,65 +71,10 @@ class root {
                 throw std::logic_error("Cannot dereference a null pointer!");
             }
             
-            return *(ptr + i);
+            return *(static_cast<T*>(ptr) + i);
         }
         
     private:
-        T *ptr;
+        void *ptr;
+        
 };
-
-// void print_registry(){
-//     std::vector<void *> reg;
-//     for(int i = 0; i < reg.size(); ++i){
-//         // root<T>& r = *reg[i];
-//         if(r != nullptr){
-//             std::cout << *r << std::endl;
-//         }
-//     }
-// }
-
-void root_test1(){
-    struct t {
-        int a;
-        char b;
-        bool c;
-        t(int a, char b, bool c): a(a), b(b), c(c) {}
-    };
-    root<struct t> r = new struct t(1, 'a', true);
-    cout << (*r).a << endl << r->b << endl;
-}
-
-void root_test2(){
-    root<int> a = new int [10];
-    for(int i = 0; i < 10; ++i){
-        a[i] = i+1;//*(a+i)
-        cout << a[i] << endl;
-    }
-    
-    print_registry<int>();
-    cout << a[5] << endl;
-    a = new int;
-    *a = 3;
-    cout << *a << std::endl;
-
-}
-
-void root_test3(){{
-    root<int> a = new int(6);
-    // a = nullptr;
-    root<int> b = new int(2);{
-    root<int> bb = b;
-
-    print_registry();
-
-}
-    
-    print_registry();
-    
-    
-}
-root<int> b = new int(4);
-
-print_registry();
-    
-}

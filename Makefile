@@ -1,21 +1,18 @@
 CXX = g++-16
-CFLAGS = -Wall -Wextra
+CXXFLAGS = -Wall -Wextra
 
-TARGETS = frontend dispatcher worker
+.PHONY: all
 
-.PHONY: all release debug sleep-debug run run-rlwrap clean
-
-debug: CFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -DDEBUG
+debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
 debug: all
 
-all: gc
+all: collector
 
-
-gc: gc.o root.o
-	$(CC) $(CFLAGS) $^ -o $@
+collector: collector.o root.o
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf %.o
+	rm -rf *.o collector

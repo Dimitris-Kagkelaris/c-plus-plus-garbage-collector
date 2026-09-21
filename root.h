@@ -1,2 +1,2 @@
 #pragma once
-class root_base;
+// class root_base;
