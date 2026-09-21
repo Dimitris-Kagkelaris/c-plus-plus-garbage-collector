@@ -3,6 +3,9 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+#include <collector.h>
+#include <root.h>
+#include <cassert>
 using std::cout;
 using std::endl;
 
@@ -17,10 +20,13 @@ using std::endl;
 
 // Maybe do that after you have a working version with the hashmap.
 
-
-
 class collector{
     public:
+        collector(){
+            assert(garbage_collector == nullptr);
+            garbage_collector = this;
+        }
+
         template <typename T>
         // maybe we want a way to add args later for the allocation
         T *allocate(int array_size = 0) {
@@ -39,7 +45,7 @@ class collector{
             // otherwise you ignore them
             // forget array of void * wrong approach. we will create the void * each time in a trace function
             // and pass it on to the marker each time.
-            alloc.trace = [array_size, ptr]() -> vector<void *>{
+            alloc.trace = [array_size, ptr]() -> std::vector<void *>{
                 // We initialize as void * because an object can push many kinds of pointers in here not only T!
                 std::vector<void *> children;
                 if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
@@ -99,11 +105,20 @@ class collector{
         };        
         
         std::unordered_map<void *, struct allocation> metadata;
-        std::vector<void *> registry;
+        std::vector<void **> registry;
         
     public:
         std::unordered_map<void *, struct allocation> get_metadata(){
             return metadata;
+        }
+        std::vector<void **> get_registry(){
+            return registry;
+        }
+        void add_to_registry(void **ptr_to_root_ptr){
+            registry.push_back(ptr_to_root_ptr);
+        }
+        void remove_from_registry(){
+            registry.pop_back();
         }
 };
 

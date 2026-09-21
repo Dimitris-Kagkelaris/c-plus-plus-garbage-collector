@@ -1,28 +1,27 @@
 #include <iostream>
 #include <vector>
+#include "collector.h"
 using std::cout;
 using std::endl;
 
-// class root_base{ // this is created only for polymorphism reasons.
-//     virtual 
-// }
-
 template<typename T>
-class root{
+class root {
     // maybe add const roots later
     public:
         root(): ptr(nullptr) {
-            registry.push_back(&ptr);
+            garbage_collector->add_to_registry(&ptr);
         }
         ~root() {
-            registry.pop_back();
+            garbage_collector->remove_from_registry();
         }
         
         
         root(const root &other_root): ptr(other_root.get_ptr()) {
+            garbage_collector->add_to_registry(&ptr);
             registry.push_back(&ptr);
         }
         root(T* const other_ptr): ptr(other_ptr) {
+            garbage_collector->add_to_registry(&ptr);
             registry.push_back(&ptr);
         }
         
@@ -80,15 +79,15 @@ class root{
         T *ptr;
 };
 
-void print_registry(){
-    std::vector<void *> reg;
-    for(int i = 0; i < reg.size(); ++i){
-        // root<T>& r = *reg[i];
-        if(r != nullptr){
-            std::cout << *r << std::endl;
-        }
-    }
-}
+// void print_registry(){
+//     std::vector<void *> reg;
+//     for(int i = 0; i < reg.size(); ++i){
+//         // root<T>& r = *reg[i];
+//         if(r != nullptr){
+//             std::cout << *r << std::endl;
+//         }
+//     }
+// }
 
 void root_test1(){
     struct t {

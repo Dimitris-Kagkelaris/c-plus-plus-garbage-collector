@@ -4,3 +4,4 @@ gc.dSYM
 __exec
 __exec.dSYM
 milestones.png
+*.o

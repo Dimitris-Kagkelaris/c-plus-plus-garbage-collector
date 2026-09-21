@@ -1,4 +1,4 @@
-CC = gcc
+CXX = g++-16
 CFLAGS = -Wall -Wextra
 
 TARGETS = frontend dispatcher worker
