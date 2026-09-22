@@ -6,6 +6,7 @@
 #include <type_traits>
 using std::cout;
 using std::endl;
+// NEXT GOAL: automatic collection after some allocation happens. Read the Book first.
 // add a mode called manual cleaning and a mode called automatic cleaning that cleans after some amount of allocation.
 class collector{
     public:
