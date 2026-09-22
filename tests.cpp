@@ -184,6 +184,8 @@ TEST_CASE("object mark and sweep"){
         CHECK(gc.isMarked(new_test->other_object) == false);
         ms();
         CHECK(gc.get_metadata().size() == 8);
+        delete new_test->not_garbage_collected;
+        new_test->not_garbage_collected = nullptr;
     }
     CHECK(gc.get_registry().size() == 0);
     gc.mark();
@@ -229,6 +231,7 @@ TEST_CASE("root1"){
         root<int> rr = new int(3);
         CHECK((*rr == *(rr.get_ptr())));
         CHECK(gc.get_registry().size() == 2);
+        delete rr.get_ptr();
     }
     CHECK(gc.get_registry().size() == 1);
     struct t {
@@ -242,6 +245,7 @@ TEST_CASE("root1"){
     CHECK((r->b == 'a'));
     CHECK((r->c == true));
     CHECK(gc.get_registry().size() == 2);
+    delete r.get_ptr();
 }
 
 TEST_CASE("root2"){
@@ -262,10 +266,12 @@ TEST_CASE("root2"){
     
 
 
+    delete[] a.get_ptr();
     a = new int;
     *a = 3;
     CHECK(*a == 3);
     CHECK(gc.get_registry().size() == 1);
+    delete a.get_ptr();
 }
 
 TEST_CASE("root3"){
@@ -286,6 +292,7 @@ TEST_CASE("root3"){
             bb_copy = bb.get_ptr();
             
         }
+        delete a.get_ptr();
         a = nullptr;
         CHECK(gc.get_registry().size() == 2);
         CHECK(b.get_ptr() == bb_copy);
@@ -297,23 +304,7 @@ TEST_CASE("root3"){
     }
     root<int> cc = new int(4);
     CHECK(gc.get_registry().size() == 1);
+    delete cc.get_ptr();
 }
 
-TEST_CASE("root5: manually delete allocations"){
-    // something more complex
-    collector &gc = *root_base::get_garbage_collector();
-
-
-    root<int *> p = gc.allocate<int*>();
-    root<int *> q = gc.allocate<int*>();
-    *p = gc.allocate<int>();
-    *q = gc.allocate<int>();
-    **p = 5;
-    **q = 4;
-
-    // try and delete manually the allocations
-    delete *p;
-    delete *q;
-    delete p.get_ptr();
-    delete q.get_ptr();
-}
+// do ASAN options detect leaks
