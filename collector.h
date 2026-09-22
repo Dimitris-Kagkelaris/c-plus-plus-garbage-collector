@@ -8,6 +8,8 @@ using std::cout;
 using std::endl;
 // NEXT GOAL: automatic collection after some allocation happens. Read the Book first.
 // add a mode called manual cleaning and a mode called automatic cleaning that cleans after some amount of allocation.
+// also we have a tiny problem: When a root is created this automatically creates a garbage collector
+// but he is never deallocated
 class collector{
     public:
         collector(){}
