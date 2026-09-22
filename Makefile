@@ -6,16 +6,19 @@ CXXFLAGS = -Wall -Wextra
 debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
 debug: all
 
-all: tests collector
+all: tests main
 
-tests: tests.o collector.o root.o
+tests: doctest.o tests.o collector.o root.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-collector: collector.o root.o
+main: main.o collector.o root.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+doctest.o: doctest.cpp
+	$(CXX) -Wall -Wextra -O1 -c $< -o $@
+
 clean:
-	rm -rf *.o collector tests
+	rm -f *.o main tests

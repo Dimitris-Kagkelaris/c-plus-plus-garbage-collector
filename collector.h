@@ -24,7 +24,6 @@ class collector{
                     void* obj = *root_ptr;
                     mark_stack.push_back(obj);
                     metadata[obj].marked = true;
-                    cout << "Marking root: " << obj << endl;
                 }
             }
 
@@ -37,7 +36,6 @@ class collector{
                     if(metadata.find(child) != metadata.end() && !metadata[child].marked){
                         metadata[child].marked = true;
                         mark_stack.push_back(child);
-                        cout << "Marking child: " << child << endl;
                     }
                 }
             }
@@ -48,11 +46,9 @@ class collector{
             for(auto it = metadata.begin(); it != metadata.end();){
                 if(it->second.marked){
                     it->second.marked = false;
-                    cout << "Unmarking: " << it->first << endl;
                     ++it;
                 }
                 else{
-                    cout << "Sweeping: " << it->first << endl;
                     it->second.deallocate();
                     it = metadata.erase(it);
                 }
@@ -78,6 +74,16 @@ class collector{
         std::unordered_map<void *, struct allocation> get_metadata(){
             return metadata;
         }
+
+        bool isMarked(void *ptr){
+            if(metadata.find(ptr) != metadata.end()){
+                return metadata[ptr].marked;
+            }
+            else{
+                throw std::logic_error("Pointer not found in metadata!");
+            }
+        }
+
         std::vector<void **> get_registry(){
             return registry;
         }
