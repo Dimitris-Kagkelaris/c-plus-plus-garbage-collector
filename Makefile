@@ -1,7 +1,7 @@
 CXX = g++-16
 CXXFLAGS = -Wall -Wextra
 
-.PHONY: all
+.PHONY: all debug
 
 debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
 debug: all
