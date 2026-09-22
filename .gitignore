@@ -1,4 +1,5 @@
 collector
+tests
 *.dSYM
 .DS_Store
 milestones.png

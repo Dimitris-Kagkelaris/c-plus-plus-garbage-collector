@@ -6,7 +6,7 @@ CXXFLAGS = -Wall -Wextra
 debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
 debug: all
 
-all: collector
+all: tests collector
 
 tests: tests.o collector.o root.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
