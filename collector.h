@@ -70,7 +70,7 @@ class collector{
             // room for improvement here: don't pass the entire array of pointers. Give them out one by one.
             std::function<std::vector<void *>(void)> trace;
             std::function<void(void)> deallocate;
-            std::function<void(void)> print_allocation;
+            // std::function<void(void)> print_allocation;
             
             // FOR NOW WE WILL USE STD::FUNCTION!!!
             // possibly don't use function <> and instead use a template or a function pointer. They are more efficient. try the template first.
@@ -103,14 +103,16 @@ class collector{
         void remove_from_registry(){
             registry.pop_back();
             // some kind of bug here?
+            // Well yes but not really
+            // In case the root object isn't on the stack then this doesn't work we have a bug, but for now it works
         }
         //debugging, prints addresses of pointers to objects
-        void print_registry(){
-            cout << "printing registry:" << endl;
-            for(size_t i = 0; i < registry.size(); ++i){
-                std::cout << *registry[i] << std::endl;
-            }
-        }
+        // void print_registry(){
+        //     cout << "printing registry:" << endl;
+        //     for(size_t i = 0; i < registry.size(); ++i){
+        //         std::cout << *registry[i] << std::endl;
+        //     }
+        // }
 };
 
 template <typename T>
@@ -163,18 +165,18 @@ T* collector::allocate(int array_size) {
 
     // for debugging:
     // works only for primitives and arrays for now
-    alloc.print_allocation = [array_size, ptr]() {
-        if constexpr (std::is_scalar_v<T>) {
-            const int loop_size = array_size == 0 ? 1 : array_size;
-            cout << "Allocation contents:" << endl;
-            for(int i = 0; i < loop_size; ++i){
-                cout << ptr[i] << ' ';
-            }cout << endl;
-        }
-        else{
-            // ptr[i].print_allocation();
-        }
-    };
+    // alloc.print_allocation = [array_size, ptr]() {
+    //     if constexpr (std::is_scalar_v<T>) {
+    //         const int loop_size = array_size == 0 ? 1 : array_size;
+    //         cout << "Allocation contents:" << endl;
+    //         for(int i = 0; i < loop_size; ++i){
+    //             cout << ptr[i] << ' ';
+    //         }cout << endl;
+    //     }
+    //     else{
+    //         // ptr[i].print_allocation();
+    //     }
+    // };
     
     metadata[ptr] = alloc;
 
