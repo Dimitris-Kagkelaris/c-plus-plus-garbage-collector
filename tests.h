@@ -1,5 +1,7 @@
 #include "root.cpp"
 
+// maybe do some testing tomorrow maybe not. for the milestone 1.
+
 class t2{
 private:
     int *a;
@@ -19,7 +21,7 @@ public:
 };
 
 void test1(){
-    collector &gc = *garbage_collector;
+    collector &gc = *root_base::get_garbage_collector();
     int **p = gc.allocate<int*>();
     int **q = gc.allocate<int*>();
     *p = gc.allocate<int>();
@@ -49,7 +51,7 @@ void test1(){
 
 
 void test2(){
-    collector &gc = *garbage_collector;
+    collector &gc = *root_base::get_garbage_collector();;
     t2 *test = gc.allocate<t2>();
     test->ab = new int(3);
     cout << *(test->ab) << endl;
@@ -67,7 +69,7 @@ void test2(){
 }
 
 void test3(){
-    collector &gc = *garbage_collector;
+    collector &gc = *root_base::get_garbage_collector();
     root<int *> p = gc.allocate<int*>();
     root<int *> q = gc.allocate<int*>();
     *p = gc.allocate<int>();
@@ -95,6 +97,14 @@ void test3(){
         }
         cout << endl;
     }
+    // cout << "One" << endl;
+    // delete *p;
+    // cout << "One" << endl;
+    // delete *q;
+    // cout << "One" << endl;
+    // delete p.get_ptr();
+    // cout << "One" << endl;
+    // delete q.get_ptr();
 }
 
 void root_test1(){
@@ -110,7 +120,7 @@ void root_test1(){
 }
 
 void root_test2(){
-    collector &gc = *garbage_collector;
+    collector &gc = *root_base::get_garbage_collector();
     root<int> a = new int [10];
     for(int i = 0; i < 10; ++i){
         a[i] = i+1;//*(a+i)
@@ -126,7 +136,7 @@ void root_test2(){
 }
 
 void root_test3(){
-    collector &gc = *garbage_collector;
+    collector &gc = *root_base::get_garbage_collector();
     {
     root<int> a = new int(6);
     // a = nullptr;

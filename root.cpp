@@ -1,14 +1,17 @@
 #include <iostream>
 #include <vector>
 #include "collector.h"
+#include "root.h"
 using std::cout;
 using std::endl;
 
+
+
 template<typename T>
-class root {
+class root : public root_base {
     // maybe add const roots later
     public:
-        root(): ptr(nullptr) {
+        root(): root_base(), ptr(nullptr) {
             garbage_collector->add_to_registry(&ptr);
         }
         ~root() {
@@ -16,10 +19,10 @@ class root {
         }
         
         
-        root(const root &other_root): ptr(other_root.get_ptr()) {
+        root(const root &other_root): root_base(), ptr(other_root.get_ptr()) {
             garbage_collector->add_to_registry(&ptr);
         }
-        root(T* const other_ptr): ptr(other_ptr) {
+        root(T* const other_ptr): root_base(), ptr(other_ptr) {
             garbage_collector->add_to_registry(&ptr);
         }
         

@@ -1,7 +1,5 @@
-gc
-gc.dSYM
+collector
+*.dSYM
 .DS_Store
-__exec
-__exec.dSYM
 milestones.png
 *.o

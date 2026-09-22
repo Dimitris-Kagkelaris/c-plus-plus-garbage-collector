@@ -7,7 +7,9 @@ using std::cout;
 using std::endl;
 class collector{
     public:
-        collector();
+        collector(){}
+        collector(const collector &) = delete;
+        collector &operator=(const collector &) = delete;
 
         template <typename T>
         T *allocate(int array_size = 0);
@@ -115,6 +117,3 @@ T* collector::allocate(int array_size) {
 
     return ptr;
 }
-
-// use root class inheritance to use a static gc pointer inside root class instead of global?
-inline collector *garbage_collector = nullptr;
