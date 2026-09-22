@@ -504,7 +504,7 @@ TEST_CASE_FIXTURE(GCFixture, "collecting with no roots frees everything") {
 struct counted {
     static int destroyed;
     ~counted() { ++destroyed; }
-    void trace(std::vector<void *> &children){}
+    void trace(std::vector<void *> &){}
 };
 int counted::destroyed = 0;
 
