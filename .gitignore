@@ -3,3 +3,4 @@ collector
 .DS_Store
 milestones.png
 *.o
+doctest.h

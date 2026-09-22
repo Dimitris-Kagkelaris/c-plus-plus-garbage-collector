@@ -13,6 +13,50 @@ class collector{
 
         template <typename T>
         T *allocate(int array_size = 0);
+
+        void mark(){
+            // do dfs maybe later this will become incremental and interruptable
+            std::vector<void*> mark_stack;//.reserve? we use vector instead of stack for performance
+
+            for(void** root_ptr: registry){
+                if(metadata.find(*root_ptr) != metadata.end()){
+                    void* obj = *root_ptr;
+                    mark_stack.push_back(obj);
+                    metadata[obj].marked = true;
+                    cout << "Marking root: " << obj << endl;
+                }
+            }
+
+            while(!mark_stack.empty()){
+                void* obj = mark_stack.back();
+                mark_stack.pop_back();
+                std::vector<void *> children = metadata[obj].trace();
+                for(void* child: children){
+                    // If the child has allocated something and it's not marked already
+                    if(metadata.find(child) != metadata.end() && !metadata[child].marked){
+                        metadata[child].marked = true;
+                        mark_stack.push_back(child);
+                        cout << "Marking child: " << child << endl;
+                    }
+                }
+            }
+        }
+
+
+        void sweep(){
+            for(auto it = metadata.begin(); it != metadata.end();){
+                if(it->second.marked){
+                    it->second.marked = false;
+                    cout << "Unmarking: " << it->first << endl;
+                    ++it;
+                }
+                else{
+                    cout << "Sweeping: " << it->first << endl;
+                    it->second.deallocate();
+                    it = metadata.erase(it);
+                }
+            }
+        }
     private:
         struct allocation {
             bool marked; // subject to change
@@ -41,10 +85,12 @@ class collector{
         }
         void remove_from_registry(){
             registry.pop_back();
+            // some kind of bug here?
         }
         //debugging, prints addresses of pointers to objects
         void print_registry(){
-            for(int i = 0; i < registry.size(); ++i){
+            cout << "printing registry:" << endl;
+            for(size_t i = 0; i < registry.size(); ++i){
                 std::cout << *registry[i] << std::endl;
             }
         }

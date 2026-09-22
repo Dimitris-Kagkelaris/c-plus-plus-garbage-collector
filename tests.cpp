@@ -1,6 +1,68 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 #include "root.cpp"
 
-// maybe do some testing tomorrow maybe not. for the milestone 1.
+void ms(){
+    collector &gc = *root_base::get_garbage_collector();
+    gc.mark();
+    gc.sweep();
+}
+void test5(){
+    collector &gc = *root_base::get_garbage_collector();
+    {
+    root<int> a = gc.allocate<int>();
+    *a = 5;
+    root<int> b; // this should point to null.
+    root<int> c; // this should point to null in the beginnning and then point to something.
+    c = gc.allocate<int>();
+    gc.print_registry();
+
+    ms();
+    
+}
+
+}
+void test4(){
+    collector &gc = *root_base::get_garbage_collector();
+    // something simple
+    {
+    root<int> a = gc.allocate<int>();
+    *a = 5;
+    ms();
+
+}
+
+    gc.mark();
+    gc.sweep();
+    cout << "Second test" << endl;
+    {   
+        root<int> b = gc.allocate<int>();
+        *b = 6;
+        gc.mark();
+        gc.sweep();
+    }
+
+
+     cout << "New test"<< endl;
+
+    {root<int *> p = gc.allocate<int*>();
+        root<int *> q = gc.allocate<int*>();
+        *p = gc.allocate<int>();
+        *q = gc.allocate<int>();
+        **p = 5;
+        **q = 4;
+        ms();
+        
+        gc.print_registry();
+        
+    }
+    
+    ms();
+
+    // in what order should the marking and sweeping happen?
+    // marking in the way the registry is. sweeping is unordered.
+
+}
 
 class t2{
 private:
@@ -42,7 +104,7 @@ void test1(){
     for(auto &[_, b]: gc.get_metadata()){
         std::vector<void *> ch = b.trace();
         cout << "Number of pointers following: " << ch.size() << endl;
-        for(int i = 0; i < ch.size(); ++i){
+        for(size_t i = 0; i < ch.size(); ++i){
             cout << *(int *)(ch[i]) << endl;
         }
         cout << endl;
@@ -60,7 +122,7 @@ void test2(){
     for(auto &[_, b]: gc.get_metadata()){
         std::vector<void *> ch = b.trace();
         cout << "Number of pointers following: " << ch.size() << endl;
-        for(int i = 0; i < ch.size(); ++i){
+        for(size_t i = 0; i < ch.size(); ++i){
             cout << ch[i] << endl;
             // cout << *(int *)(ch[i]) << endl;
         }
@@ -92,7 +154,7 @@ void test3(){
     for(auto &[_, b]: gc.get_metadata()){
         std::vector<void *> ch = b.trace();
         cout << "Number of pointers following: " << ch.size() << endl;
-        for(int i = 0; i < ch.size(); ++i){
+        for(size_t i = 0; i < ch.size(); ++i){
             cout << *(int *)(ch[i]) << endl;
         }
         cout << endl;
