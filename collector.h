@@ -6,6 +6,7 @@
 #include <type_traits>
 using std::cout;
 using std::endl;
+// add a mode called manual cleaning and a mode called automatic cleaning that cleans after some amount of allocation.
 class collector{
     public:
         collector(){}
@@ -54,6 +55,12 @@ class collector{
                 }
             }
         }
+
+        void collect(){
+            mark();
+            sweep();
+        }
+
     private:
         struct allocation {
             bool marked; // subject to change
