@@ -8,6 +8,10 @@ debug: all
 
 all: tests main
 
+leakcheck: CXXFLAGS += -g -O0
+leakcheck: clean all
+	MallocStackLogging=1 leaks --atExit -- ./main
+
 tests: doctest.o tests.o collector.o root.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
