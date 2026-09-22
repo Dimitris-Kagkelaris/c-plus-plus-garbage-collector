@@ -8,11 +8,14 @@ debug: all
 
 all: collector
 
+tests: tests.o collector.o root.o
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
 collector: collector.o root.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-%.o: %.c
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o collector
+	rm -rf *.o collector tests

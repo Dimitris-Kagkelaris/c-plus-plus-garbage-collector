@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
-#include "root.cpp"
+#include "root.h"
+#include "collector.h"
 
 void ms(){
     collector &gc = *root_base::get_garbage_collector();
@@ -169,6 +170,27 @@ void test3(){
     // delete q.get_ptr();
 }
 
+TEST_CASE("root1"){
+    collector &gc = *root_base::get_garbage_collector();
+    root<int> a;
+    CHECK(gc.get_registry().size() == 1);
+    {   
+        root<int> rr = new int(3);
+        CHECK(gc.get_registry().size() == 2);
+    }
+    CHECK(gc.get_registry().size() == 1);
+    struct t {
+        int a;
+        char b;
+        bool c;
+        t(int a, char b, bool c): a(a), b(b), c(c) {}
+    };
+    root<struct t> r = new struct t(1, 'a', true);
+    CHECK(((*r).a == 1));
+    CHECK((r->b == 'a'));
+    CHECK((r->c == true));
+    CHECK(gc.get_registry().size() == 2);
+}
 void root_test1(){
     root<int> rr = new int(3);
     struct t {

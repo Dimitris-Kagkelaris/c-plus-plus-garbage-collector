@@ -1,11 +1,10 @@
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <functional>
-#include <type_traits>
+// #include <iostream>
+// #include <vector>
+// #include <unordered_map>
+// #include <functional>
+// #include <type_traits>
 #include "collector.h"
 #include "root.h"
-#include "tests.h"
 using std::cout;
 using std::endl;
 
@@ -23,9 +22,10 @@ using std::endl;
 
 
 int main(){
-    root<int> a;
-    cout << "Test 5" << endl;
-    test5();
+    // root<int> a;
+    // cout << "Test 5" << endl;
+    // test5();
+    cout << "this does nothing"<<endl;
 
 
     // cout << "Test 1"<< endl;

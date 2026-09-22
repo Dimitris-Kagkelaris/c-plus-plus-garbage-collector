@@ -1,8 +1,9 @@
 #pragma once
 #include <iostream>
+#include <vector>
 #include <unordered_map>
 #include <functional>
-#include <cassert>
+#include <type_traits>
 using std::cout;
 using std::endl;
 class collector{
