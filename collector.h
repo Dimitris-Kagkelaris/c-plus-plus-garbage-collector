@@ -6,26 +6,36 @@
 #include <type_traits>
 #include <cstddef>
 #include <stdexcept>
+#include <algorithm>
 using std::cout;
 using std::endl;
-// NEXT GOAL: automatic collection after some allocation happens. Read the Book first.
-// add a mode called manual cleaning and a mode called automatic cleaning that cleans after some amount of allocation.
 // also we have a tiny problem: When a root is created this automatically creates a garbage collector
 // but he is never deallocated
+constexpr size_t MB = 1024*1024;
+
 class collector{
     public:
-        collector(){}
+        enum class collection_mode {
+            Normal,     // collect when heap_bytes reaches next_gc
+            Stress,     // collect after every allocation
+            Manual      // collect only on explicit collect() calls
+        };
+        collection_mode mode;
+        
+        collector(collection_mode cmode = collection_mode::Normal): mode(cmode) {}
         collector(const collector &) = delete;
         collector &operator=(const collector &) = delete;
 
         template <typename T>
         T *allocate(size_t array_size = 0);
+        // maybe those 2 should be inside of private??? breaks testing though
         void mark();
         void sweep();
         void collect(){
             mark();
             sweep();
         }
+        void collect_if_needed();
 
     private:
         struct allocation {
@@ -69,20 +79,14 @@ class collector{
             // Well yes but not really
             // In case the root object isn't on the stack then this doesn't work we have a bug, but for now it works
         }
-        //debugging, prints addresses of pointers to objects
-        // void print_registry(){
-        //     cout << "printing registry:" << endl;
-        //     for(size_t i = 0; i < registry.size(); ++i){
-        //         std::cout << *registry[i] << std::endl;
-        //     }
-        // }
 
     private:
         size_t heap_bytes = 0;
-        size_t next_gc = 1024*1024; // when heap_bytes reaches next_gc marking and sweeping happens
+        size_t next_gc = MB; // when heap_bytes reaches next_gc marking and sweeping happens
         double growth_factor = 2;
     
     public:
+
         size_t get_heap_bytes() { return heap_bytes; }
         size_t get_next_gc() { return next_gc; }
         double get_growth_factor() { return growth_factor; }
@@ -98,13 +102,15 @@ class collector{
             if (bytes <= heap_bytes){
                 throw std::invalid_argument("next_gc must be greater than heap_bytes");
             }
-            next_gc = bytes;
+            next_gc = std::max(bytes, MB);
         }
 };
 
 template <typename T>
 // maybe we want a way to add args later for the allocation
 T* collector::allocate(size_t array_size) {
+
+    collect_if_needed();
 
     T *ptr;
     if(array_size == 0) {
@@ -153,21 +159,6 @@ T* collector::allocate(size_t array_size) {
         }
         return (array_size == 0 ? sizeof(T) : array_size * sizeof(T));
     };
-
-    // for debugging:
-    // works only for primitives and arrays for now
-    // alloc.print_allocation = [array_size, ptr]() {
-    //     if constexpr (std::is_scalar_v<T>) {
-    //         const int loop_size = array_size == 0 ? 1 : array_size;
-    //         cout << "Allocation contents:" << endl;
-    //         for(int i = 0; i < loop_size; ++i){
-    //             cout << ptr[i] << ' ';
-    //         }cout << endl;
-    //     }
-    //     else{
-    //         // ptr[i].print_allocation();
-    //     }
-    // };
     
     metadata[ptr] = alloc;
 

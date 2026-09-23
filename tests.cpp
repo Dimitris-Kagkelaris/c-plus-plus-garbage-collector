@@ -5,7 +5,10 @@
 struct GCFixture {
     root_base bootstrap; //calls the rootbase constructor to create a garbage collector first
     collector &gc = *root_base::get_garbage_collector();
+    collector::collection_mode previous_mode;
     GCFixture() {
+        previous_mode = gc.mode;
+        gc.mode = collector::collection_mode::Manual;
         REQUIRE(gc.get_registry().size() == 0);
         REQUIRE(gc.get_metadata().size() == 0);
         REQUIRE(gc.get_heap_bytes() == 0);
@@ -15,8 +18,8 @@ struct GCFixture {
         CHECK(gc.get_registry().size() == 0);
         CHECK(gc.get_metadata().size() == 0);
         CHECK(gc.get_heap_bytes() == 0);
+        gc.mode = previous_mode;
     }
-
 };
 
 TEST_SUITE_BEGIN("mark_and_sweep");
@@ -375,7 +378,6 @@ TEST_CASE_FIXTURE(GCFixture, "mark ignores null and non-GC children") {
 TEST_SUITE_END();
 
 
-// new tests:
 TEST_SUITE_BEGIN("edge_cases");
 
 TEST_CASE_FIXTURE(GCFixture, "deep chain does not overflow the stack") {
@@ -588,5 +590,11 @@ TEST_CASE_FIXTURE(GCFixture, "sweep runs destructors") {
     CHECK(gc.get_heap_bytes() == 0);
     counted::destroyed = 0;
 }
+
+TEST_SUITE_END();
+
+TEST_SUITE_BEGIN("automatic collection");
+
+
 
 TEST_SUITE_END();

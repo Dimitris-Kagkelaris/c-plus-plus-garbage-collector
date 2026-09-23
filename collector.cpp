@@ -61,3 +61,19 @@ void collector::sweep(){
         }
     }
 }
+
+void collector::collect_if_needed(){
+    switch (mode) {
+        case collection_mode::Manual:
+            break;
+        case collection_mode::Stress:
+            collect();
+            break;
+        case collection_mode::Normal:
+            if(heap_bytes >= next_gc){
+                collect();
+                next_gc = std::max(static_cast<size_t>(heap_bytes * growth_factor), MB);
+            }
+            break;
+    }
+}
