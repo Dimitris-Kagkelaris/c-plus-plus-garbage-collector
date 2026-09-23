@@ -1,7 +1,8 @@
 Limitations
--roots can only live on the stack
+-roots can only live on the stack and not const
 
 Ideas
+    use linked list instead of hashmap:
     consider the allocation metadata struct being the header of each allocation. and not use the hashmap.
     You allocate sizeof(header) + sizeof(T) and then return pointer + sizeof(header).
     If you need the metadata pointer - sizeof(header).
@@ -14,4 +15,6 @@ Ideas
 
     Add support for other types other than primitives
 
-    
+    Restructure according to singleton
+
+    Use some namespaces?

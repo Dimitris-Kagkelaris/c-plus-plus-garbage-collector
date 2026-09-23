@@ -4,10 +4,8 @@
 #include "collector.h"
 using std::cout;
 using std::endl;
-// create root_base with a static pointer to gc (initialized to nullptr?). 
-// also in the constructor you create a collector and point the pointer to it.
 
-// maybe not a good design we will see later.
+// maybe not a good design fix later.
 class root_base {
     protected:
         inline static collector *garbage_collector = nullptr;
@@ -28,7 +26,7 @@ class root_base {
 
 template<typename T>
 class root : public root_base {
-    // maybe add const roots later
+    // maybe add const roots later and roots not in the stack but in the heap
     public:
         root(): root_base(), ptr(nullptr) {
             garbage_collector->add_to_registry(&ptr);
@@ -49,13 +47,13 @@ class root : public root_base {
             return static_cast<T*>(ptr);
         }
 
-        // should disable this operator in case someone creates a Root<void> and maybe some other operators as well
-        T& operator*() const {
+        template<typename U = T>
+        U& operator*() const {
             if(ptr == nullptr){
                 throw std::logic_error("Cannot dereference a null pointer!");
             }
-            
-            return *static_cast<T*>(ptr);
+
+            return *static_cast<U*>(ptr);
         }
 
         T* operator->() const {
@@ -88,12 +86,13 @@ class root : public root_base {
             return !(*this == other);
         }
 
-        T& operator[](int i) const {
+        template<typename U = T>
+        U& operator[](int i) const {
             if(ptr == nullptr){
                 throw std::logic_error("Cannot dereference a null pointer!");
             }
-            
-            return *(static_cast<T*>(ptr) + i);
+
+            return *(static_cast<U*>(ptr) + i);
         }
         
     private:
