@@ -1,9 +1,9 @@
 CXX = g++-16
-CXXFLAGS = -Wall -Wextra -Wsign-conversion
+CXXFLAGS = -Wall -Wextra -Wsign-conversion -std=c++20
 
-.PHONY: all debug
+.PHONY: all debug leakcheck clean
 
-debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
+debug: CXXFLAGS += -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer
 debug: all
 
 all: tests main
@@ -20,6 +20,9 @@ main: main.o collector.o root.o
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+tests.o collector.o root.o: collector.h
+tests.o collector.o root.o: root.h
 
 doctest.o: doctest.cpp
 	$(CXX) -Wall -Wextra -O1 -c $< -o $@

@@ -8,22 +8,9 @@
 using std::cout;
 using std::endl;
 
-// consider the allocation metadata struct being the header of each allocation. and not use the hashmap.
-// You allocate sizeof(header) + sizeof(T) and then return pointer + sizeof(header).
-// If you need the metadata pointer - sizeof(header).
-// This way you avoid the overhead of the hashmap.
-// What will you put in the header:
-// same stuff as the hashmap. marked, trace, deallocate, print_allocation.
-// also a pointer to the next allocation. This way you can traverse all allocations.
-// Singly linked list is better.
-
-// Maybe do that after you have a working version with the hashmap.
-
-// Add support for other types other than primitives?
-
 void collector::mark(){
-    // do dfs maybe later this will become incremental and interruptable
-    std::vector<void*> mark_stack;//.reserve? we use vector instead of stack for performance
+    // we use vector instead of stack for performance
+    std::vector<void*> mark_stack; 
 
     for(void** root_ptr: registry){
         if(metadata.find(*root_ptr) != metadata.end()){
