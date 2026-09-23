@@ -142,12 +142,6 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 
-    // in what order should the marking and sweeping happen?
-    // marking in the way the registry is. sweeping is unordered.
-
-    // try and delete manually the allocations
-
-
 }
 
 class my_obj{
