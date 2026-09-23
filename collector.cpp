@@ -18,3 +18,5 @@ using std::endl;
 // Singly linked list is better.
 
 // Maybe do that after you have a working version with the hashmap.
+
+// Add support for other types other than primitives?

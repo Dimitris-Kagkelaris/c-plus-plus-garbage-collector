@@ -1,5 +1,7 @@
 #include <iostream>
 
 int main(){
-    std::cout << "this does nothing"<<std::endl;
+    int *a = new int;
+    a[0] = 5;
+    std::cout << a[0] << std::endl;
 }

@@ -17,6 +17,7 @@ struct GCFixture {
 
 };
 
+TEST_SUITE_BEGIN("mark_and_sweep");
 
 TEST_CASE_FIXTURE(GCFixture, "normal case"){
     {
@@ -233,6 +234,10 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep with cycles"){
     CHECK(gc.get_metadata().size() == 0);
 }
 
+TEST_SUITE_END();
+
+TEST_SUITE_BEGIN("roots");
+
 TEST_CASE_FIXTURE(GCFixture, "root1"){
     root<int> a;
     collector &gc = *root_base::get_garbage_collector();
@@ -329,8 +334,11 @@ TEST_CASE_FIXTURE(GCFixture, "mark ignores null and non-GC children") {
     CHECK(*(r->not_garbage_collected) == 10);
     delete r->not_garbage_collected;
 }
+TEST_SUITE_END();
+
 
 // new tests:
+TEST_SUITE_BEGIN("edge_cases");
 
 TEST_CASE_FIXTURE(GCFixture, "deep chain does not overflow the stack") {
     constexpr int kDepth = 1000000;
@@ -515,3 +523,5 @@ TEST_CASE_FIXTURE(GCFixture, "sweep runs destructors") {
     CHECK(counted::destroyed == 1);
     counted::destroyed = 0;
 }
+
+TEST_SUITE_END();
