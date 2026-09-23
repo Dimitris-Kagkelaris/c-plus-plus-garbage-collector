@@ -7,10 +7,6 @@
 #include <cstddef>
 #include <stdexcept>
 #include <algorithm>
-using std::cout;
-using std::endl;
-// also we have a tiny problem: When a root is created this automatically creates a garbage collector
-// but he is never deallocated
 constexpr size_t MB = 1024*1024;
 
 class collector{
@@ -28,7 +24,6 @@ class collector{
 
         template <typename T>
         T *allocate(size_t array_size = 0);
-        // maybe those 2 should be inside of private??? breaks testing though
         void mark();
         void sweep();
         void collect(){
@@ -40,14 +35,8 @@ class collector{
     private:
         struct allocation {
             bool marked; // subject to change
-            // room for improvement here: don't pass the entire array of pointers. Give them out one by one.
             std::function<std::vector<void *>(void)> trace;
             std::function<size_t(void)> deallocate;
-            // std::function<void(void)> print_allocation;
-            // could i make the lambdas normal functions?
-            // FOR NOW WE WILL USE STD::FUNCTION!!!
-            // possibly don't use function <> and instead use a template or a function pointer. They are more efficient. try the template first.
-            // also if you move stuff around the captured variables will be invalidated.
         };       
         
         std::unordered_map<void *, struct allocation> metadata;
@@ -75,14 +64,11 @@ class collector{
         }
         void remove_from_registry(){
             registry.pop_back();
-            // some kind of bug here?
-            // Well yes but not really
-            // In case the root object isn't on the stack then this doesn't work we have a bug, but for now it works
         }
 
     private:
         size_t heap_bytes = 0;
-        size_t next_gc = MB; // when heap_bytes reaches next_gc marking and sweeping happens
+        size_t next_gc = MB;
         double growth_factor = 2;
     
     public:
@@ -107,7 +93,6 @@ class collector{
 };
 
 template <typename T>
-// maybe we want a way to add args later for the allocation
 T* collector::allocate(size_t array_size) {
 
     collect_if_needed();
@@ -125,15 +110,10 @@ T* collector::allocate(size_t array_size) {
     struct allocation alloc;
     alloc.marked = false;
     
-    // you get the vector of void pointers during the marking phase and if they exist inside the hash map you follow them
-    // otherwise you ignore them
-    // forget array of void * wrong approach. we will create the void * each time in a trace function
-    // and pass it on to the marker each time.
     alloc.trace = [array_size, ptr]() -> std::vector<void *>{
-        // We initialize as void * because an object can push many kinds of pointers in here not only T!
         std::vector<void *> children;
         if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
-            // primitive or enum — nothing to trace
+            // primitive or enum. Nothing to trace
         }
         else{
             const int loop_size = array_size == 0 ? 1 : array_size;
@@ -150,7 +130,7 @@ T* collector::allocate(size_t array_size) {
     };
 
     
-    alloc.deallocate = [array_size, ptr]() -> size_t{ // previously it was passing a void* and casting that to a T. i think that was a worse approach
+    alloc.deallocate = [array_size, ptr]() -> size_t {
         if(array_size == 0) {
             delete ptr;
         }

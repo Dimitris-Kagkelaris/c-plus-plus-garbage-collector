@@ -26,7 +26,6 @@ class root_base {
 
 template<typename T>
 class root : public root_base {
-    // maybe add const roots later and roots not in the stack but in the heap
     public:
         root(): root_base(), ptr(nullptr) {
             garbage_collector->add_to_registry(&ptr);

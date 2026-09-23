@@ -42,7 +42,6 @@ void collector::sweep(){
             ++it;
         }
         else{
-            // this needs to become atomic in case we allow sweeping and running the user program concurently
             heap_bytes -= it->second.deallocate();
             it = metadata.erase(it);
         }
