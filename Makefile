@@ -1,5 +1,5 @@
 CXX = g++-16
-CXXFLAGS = -Wall -Wextra -Wsign-conversion -std=c++20
+CXXFLAGS = -Wall -Wextra -Wsign-conversion -std=c++17
 
 .PHONY: all debug leakcheck clean
 
@@ -25,7 +25,7 @@ tests.o collector.o root.o: collector.h
 tests.o collector.o root.o: root.h
 
 doctest.o: doctest.cpp
-	$(CXX) -Wall -Wextra -O1 -c $< -o $@
+	$(CXX) -Wall -Wextra -std=c++17 -O1 -c $< -o $@
 
 clean:
 	rm -f *.o main tests

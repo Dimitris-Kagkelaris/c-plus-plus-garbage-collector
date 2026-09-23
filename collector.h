@@ -92,8 +92,8 @@ class collector{
         double get_growth_factor() { return growth_factor; }
 
         void set_growth_factor(double factor) {
-            if (!(factor > 1.0)){ // NaN is rejected too
-                throw std::invalid_argument("growth_factor must be > 1");
+            if (!(factor > 1.0 && factor < 100.0)){ // NaN is rejected too
+                throw std::invalid_argument("growth_factor must be > 1 and < 100");
             }
             growth_factor = factor;
         }
