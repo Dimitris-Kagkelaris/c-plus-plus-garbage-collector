@@ -21,7 +21,9 @@ TEST_SUITE_BEGIN("mark_and_sweep");
 
 TEST_CASE_FIXTURE(GCFixture, "normal case"){
     {
+        CHECK(gc.get_heap_bytes() == 0);
         root<int> a = gc.allocate<int>();
+        CHECK(gc.get_heap_bytes() == sizeof(int));
         *a = 5;
         root<int> b; // this should point to null.
         root<int> c; // this should point to null in the beginnning and then point to something.
@@ -29,6 +31,7 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
         CHECK(b.get_ptr() == nullptr);
         CHECK(c.get_ptr() == nullptr);
         c = gc.allocate<int>();
+        CHECK(gc.get_heap_bytes() == 2*sizeof(int));
         CHECK(c.get_ptr() != nullptr);
 
         CHECK(gc.get_metadata().size() == 2);
@@ -47,6 +50,7 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
     gc.mark();
     gc.sweep();
     CHECK(gc.get_metadata().size() == 0);
+    CHECK(gc.get_heap_bytes() == 0);
 
 }
 
@@ -54,15 +58,19 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
     collector &gc = *root_base::get_garbage_collector();
     // something simple
     {
+        CHECK(gc.get_heap_bytes() == 0);
         root<int> a = gc.allocate<int>();
         *a = 5;
         gc.collect();
+        CHECK(gc.get_heap_bytes() == sizeof(int));
         CHECK(gc.isMarked(a.get_ptr()) == false);
         CHECK(gc.get_metadata().size() == 1);
     }
-
+    CHECK(gc.get_heap_bytes() == sizeof(int));
     gc.mark();
+    CHECK(gc.get_heap_bytes() == sizeof(int));
     gc.sweep();
+    CHECK(gc.get_heap_bytes() == 0);
     CHECK(gc.get_metadata().size() == 0);
     {   
         root<int> b = gc.allocate<int>();
@@ -73,7 +81,9 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
     // root died but object is still alive
     CHECK(gc.get_registry().size() == 0);
     CHECK(gc.get_metadata().size() == 1);
+    CHECK(gc.get_heap_bytes() == sizeof(int));
     gc.collect();
+    CHECK(gc.get_heap_bytes() == 0);
     CHECK(gc.get_metadata().size() == 0);
 }
 TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
@@ -84,8 +94,10 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     {
         root<int *> p = gc.allocate<int*>();
         root<int *> q = gc.allocate<int*>();
+        CHECK(gc.get_heap_bytes() == 2*sizeof(int*));
         *p = gc.allocate<int>();
         *q = gc.allocate<int>();
+        CHECK(gc.get_heap_bytes() == 2*sizeof(int) + 2*sizeof(int*));
         help_p = p.get_ptr();
         help_q = q.get_ptr();
         **p = 5;
@@ -106,10 +118,12 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     
         
         CHECK(gc.get_registry().size() == 2);
+        CHECK(gc.get_heap_bytes() == 2*sizeof(int) + 2*sizeof(int*));
     }
     CHECK(gc.get_registry().size() == 0);
 
     gc.mark();
+    CHECK(gc.get_heap_bytes() == 2*sizeof(int) + 2*sizeof(int*));
     CHECK(gc.isMarked(help_p) == false);
     CHECK(gc.isMarked(help_q) == false);
     CHECK(gc.isMarked(*help_p) == false);
@@ -117,6 +131,7 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     CHECK(gc.get_metadata().size() == 4);
     gc.sweep();
     CHECK(gc.get_metadata().size() == 0);
+    CHECK(gc.get_heap_bytes() == 0);
 
     // in what order should the marking and sweeping happen?
     // marking in the way the registry is. sweeping is unordered.

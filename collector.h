@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+#include <cstddef>
+#include <stdexcept>
 using std::cout;
 using std::endl;
 // NEXT GOAL: automatic collection after some allocation happens. Read the Book first.
@@ -17,48 +19,9 @@ class collector{
         collector &operator=(const collector &) = delete;
 
         template <typename T>
-        T *allocate(int array_size = 0);
-
-        void mark(){
-            // do dfs maybe later this will become incremental and interruptable
-            std::vector<void*> mark_stack;//.reserve? we use vector instead of stack for performance
-
-            for(void** root_ptr: registry){
-                if(metadata.find(*root_ptr) != metadata.end()){
-                    void* obj = *root_ptr;
-                    mark_stack.push_back(obj);
-                    metadata[obj].marked = true;
-                }
-            }
-
-            while(!mark_stack.empty()){
-                void* obj = mark_stack.back();
-                mark_stack.pop_back();
-                std::vector<void *> children = metadata[obj].trace();
-                for(void* child: children){
-                    // If the child has allocated something and it's not marked already
-                    if(metadata.find(child) != metadata.end() && !metadata[child].marked){
-                        metadata[child].marked = true;
-                        mark_stack.push_back(child);
-                    }
-                }
-            }
-        }
-
-
-        void sweep(){
-            for(auto it = metadata.begin(); it != metadata.end();){
-                if(it->second.marked){
-                    it->second.marked = false;
-                    ++it;
-                }
-                else{
-                    it->second.deallocate();
-                    it = metadata.erase(it);
-                }
-            }
-        }
-
+        T *allocate(size_t array_size = 0);
+        void mark();
+        void sweep();
         void collect(){
             mark();
             sweep();
@@ -69,9 +32,9 @@ class collector{
             bool marked; // subject to change
             // room for improvement here: don't pass the entire array of pointers. Give them out one by one.
             std::function<std::vector<void *>(void)> trace;
-            std::function<void(void)> deallocate;
+            std::function<size_t(void)> deallocate;
             // std::function<void(void)> print_allocation;
-            
+            // could i make the lambdas normal functions?
             // FOR NOW WE WILL USE STD::FUNCTION!!!
             // possibly don't use function <> and instead use a template or a function pointer. They are more efficient. try the template first.
             // also if you move stuff around the captured variables will be invalidated.
@@ -113,11 +76,36 @@ class collector{
         //         std::cout << *registry[i] << std::endl;
         //     }
         // }
+
+    private:
+        size_t heap_bytes = 0;
+        size_t next_gc = 1024*1024; // when heap_bytes reaches next_gc marking and sweeping happens
+        double growth_factor = 2;
+    
+    public:
+        size_t get_heap_bytes() { return heap_bytes; }
+        size_t get_next_gc() { return next_gc; }
+        double get_growth_factor() { return growth_factor; }
+
+        void set_growth_factor(double factor) {
+            if (!(factor > 1.0)){ // NaN is rejected too
+                throw std::invalid_argument("growth_factor must be > 1");
+            }
+            growth_factor = factor;
+        }
+
+        void set_next_gc(std::size_t bytes) {
+            if (bytes <= heap_bytes){
+                throw std::invalid_argument("next_gc must be greater than heap_bytes");
+            }
+            next_gc = bytes;
+        }
 };
 
 template <typename T>
 // maybe we want a way to add args later for the allocation
-T* collector::allocate(int array_size) {
+T* collector::allocate(size_t array_size) {
+
     T *ptr;
     if(array_size == 0) {
        ptr = new T();
@@ -125,6 +113,8 @@ T* collector::allocate(int array_size) {
     else {
         ptr = new T[array_size]();
     }
+
+    heap_bytes += (array_size == 0 ? 1 : array_size) * sizeof(T);
 
     struct allocation alloc;
     alloc.marked = false;
@@ -154,13 +144,14 @@ T* collector::allocate(int array_size) {
     };
 
     
-    alloc.deallocate = [array_size, ptr]() -> void{ // previously it was passing a void* and casting that to a T. i think that was a worse approach
+    alloc.deallocate = [array_size, ptr]() -> size_t{ // previously it was passing a void* and casting that to a T. i think that was a worse approach
         if(array_size == 0) {
             delete ptr;
         }
         else {
             delete[] ptr;
         }
+        return (array_size == 0 ? sizeof(T) : array_size * sizeof(T));
     };
 
     // for debugging:

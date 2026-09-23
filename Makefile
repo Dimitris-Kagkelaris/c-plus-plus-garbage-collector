@@ -1,5 +1,5 @@
 CXX = g++-16
-CXXFLAGS = -Wall -Wextra
+CXXFLAGS = -Wall -Wextra -Wsign-conversion
 
 .PHONY: all debug
 
