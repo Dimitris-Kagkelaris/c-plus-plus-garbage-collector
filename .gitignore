@@ -2,8 +2,8 @@ main
 tests
 *.dSYM
 .DS_Store
-milestones.png
 *.o
 doctest.h
 doctest.cpp
 notes.txt
+gc_optimizations.png
