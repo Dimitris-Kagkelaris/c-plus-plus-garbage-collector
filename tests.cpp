@@ -1,15 +1,16 @@
 #include "doctest.h"
 #include "root.hpp"
 #include "collector.hpp"
+#include "models.hpp"
+#include <stdexcept>
 #include <cmath>
 
 struct GCFixture {
-    root_base bootstrap; //calls the rootbase constructor to create a garbage collector first
-    collector &gc = *root_base::get_garbage_collector();
-    collector::collection_mode previous_mode;
+    collector &gc = get_collector();
+    collection_mode previous_mode;
     GCFixture() {
         previous_mode = gc.mode;
-        gc.mode = collector::collection_mode::Manual;
+        gc.mode = collection_mode::Manual;
         REQUIRE(gc.get_registry().size() == 0);
         REQUIRE(gc.get_metadata().size() == 0);
         REQUIRE(gc.get_heap_bytes() == 0);
@@ -31,7 +32,7 @@ TEST_SUITE_BEGIN("mark_and_sweep");
 TEST_CASE_FIXTURE(GCFixture, "normal case"){
     {
         CHECK(gc.get_heap_bytes() == 0);
-        root<int> a = gc.allocate<int>();
+        root<int> a = allocate<int>();
         CHECK(gc.get_heap_bytes() == sizeof(int));
         *a = 5;
         root<int> b; // this should point to null.
@@ -39,19 +40,19 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
         CHECK(*a == 5);
         CHECK(b.get_ptr() == nullptr);
         CHECK(c.get_ptr() == nullptr);
-        c = gc.allocate<int>();
+        c = allocate<int>();
         CHECK(gc.get_heap_bytes() == 2*sizeof(int));
         CHECK(c.get_ptr() != nullptr);
 
         CHECK(gc.get_metadata().size() == 2);
         gc.mark();
-        CHECK(gc.isMarked(a.get_ptr()) == true);
-        CHECK(gc.isMarked(c.get_ptr()) == true);
-        CHECK_THROWS_AS(gc.isMarked(b.get_ptr()), std::logic_error);
+        CHECK(gc.is_marked(a.get_ptr()) == true);
+        CHECK(gc.is_marked(c.get_ptr()) == true);
+        CHECK_THROWS_AS(gc.is_marked(b.get_ptr()), std::logic_error);
         gc.sweep();     
-        CHECK(gc.isMarked(a.get_ptr()) == false);
-        CHECK(gc.isMarked(c.get_ptr()) == false);
-        CHECK_THROWS_AS(gc.isMarked(b.get_ptr()), std::logic_error);
+        CHECK(gc.is_marked(a.get_ptr()) == false);
+        CHECK(gc.is_marked(c.get_ptr()) == false);
+        CHECK_THROWS_AS(gc.is_marked(b.get_ptr()), std::logic_error);
         CHECK(gc.get_metadata().size() == 2);
         
     }
@@ -64,15 +65,15 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     // something simple
     {
         CHECK(gc.get_heap_bytes() == 0);
-        root<int> a = gc.allocate<int>();
+        root<int> a = allocate<int>();
         *a = 5;
-        gc.collect();
+        collect();
         CHECK(gc.get_heap_bytes() == sizeof(int));
-        CHECK(gc.isMarked(a.get_ptr()) == false);
+        CHECK(gc.is_marked(a.get_ptr()) == false);
         CHECK(gc.get_metadata().size() == 1);
     }
     CHECK(gc.get_heap_bytes() == sizeof(int));
@@ -82,7 +83,7 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
     CHECK(gc.get_heap_bytes() == 0);
     CHECK(gc.get_metadata().size() == 0);
     {   
-        root<int> b = gc.allocate<int>();
+        root<int> b = allocate<int>();
         *b = 6;
         gc.mark();
         gc.sweep();
@@ -91,21 +92,21 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
     CHECK(gc.get_registry().size() == 0);
     CHECK(gc.get_metadata().size() == 1);
     CHECK(gc.get_heap_bytes() == sizeof(int));
-    gc.collect();
+    collect();
     CHECK(gc.get_heap_bytes() == 0);
     CHECK(gc.get_metadata().size() == 0);
 }
 TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     // something more complex
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     int **help_p, **help_q;
 
     {
-        root<int *> p = gc.allocate<int*>();
-        root<int *> q = gc.allocate<int*>();
+        root<int *> p = allocate<int*>();
+        root<int *> q = allocate<int*>();
         CHECK(gc.get_heap_bytes() == 2*sizeof(int*));
-        *p = gc.allocate<int>();
-        *q = gc.allocate<int>();
+        *p = allocate<int>();
+        *q = allocate<int>();
         CHECK(gc.get_heap_bytes() == 2*sizeof(int) + 2*sizeof(int*));
         help_p = p.get_ptr();
         help_q = q.get_ptr();
@@ -113,16 +114,16 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
         **q = 4;
         CHECK(**p == 5); CHECK(**q == 4);
         gc.mark();
-        CHECK(gc.isMarked(p.get_ptr()) == true);
-        CHECK(gc.isMarked(q.get_ptr()) == true);
-        CHECK(gc.isMarked(*p) == true);
-        CHECK(gc.isMarked(*q) == true);
+        CHECK(gc.is_marked(p.get_ptr()) == true);
+        CHECK(gc.is_marked(q.get_ptr()) == true);
+        CHECK(gc.is_marked(*p) == true);
+        CHECK(gc.is_marked(*q) == true);
         CHECK(gc.get_metadata().size() == 4);
         gc.sweep();
-        CHECK(gc.isMarked(p.get_ptr()) == false);
-        CHECK(gc.isMarked(q.get_ptr()) == false);
-        CHECK(gc.isMarked(*p) == false);
-        CHECK(gc.isMarked(*q) == false);
+        CHECK(gc.is_marked(p.get_ptr()) == false);
+        CHECK(gc.is_marked(q.get_ptr()) == false);
+        CHECK(gc.is_marked(*p) == false);
+        CHECK(gc.is_marked(*q) == false);
         CHECK(gc.get_metadata().size() == 4);
     
         
@@ -133,10 +134,10 @@ TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
 
     gc.mark();
     CHECK(gc.get_heap_bytes() == 2*sizeof(int) + 2*sizeof(int*));
-    CHECK(gc.isMarked(help_p) == false);
-    CHECK(gc.isMarked(help_q) == false);
-    CHECK(gc.isMarked(*help_p) == false);
-    CHECK(gc.isMarked(*help_q) == false);
+    CHECK(gc.is_marked(help_p) == false);
+    CHECK(gc.is_marked(help_q) == false);
+    CHECK(gc.is_marked(*help_p) == false);
+    CHECK(gc.is_marked(*help_q) == false);
     CHECK(gc.get_metadata().size() == 4);
     gc.sweep();
     CHECK(gc.get_metadata().size() == 0);
@@ -169,20 +170,20 @@ class my_obj{
 };
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     {
-        my_obj* test = gc.allocate<my_obj>();
+        my_obj* test = allocate<my_obj>();
         CHECK(gc.get_heap_bytes() == sizeof(my_obj));
         CHECK(test->f == nullptr);
         CHECK(test->a == nullptr);
         CHECK(test->aa == 0);
-        test->f = gc.allocate<int>();
-        test->a = gc.allocate<int>(); *(test->a) = 1;
-        test->b = gc.allocate<int>(); *(test->b) = 2;
-        test->c = gc.allocate<char>(); *(test->c) = 'a';
-        test->d = gc.allocate<int*>(); 
-        test->other_object = gc.allocate<my_obj>();
-        *(test->d) = gc.allocate<int>(); **(test->d) = 4;
+        test->f = allocate<int>();
+        test->a = allocate<int>(); *(test->a) = 1;
+        test->b = allocate<int>(); *(test->b) = 2;
+        test->c = allocate<char>(); *(test->c) = 'a';
+        test->d = allocate<int*>(); 
+        test->other_object = allocate<my_obj>();
+        *(test->d) = allocate<int>(); **(test->d) = 4;
         test->e = true;
         const size_t live_bytes = 2*sizeof(my_obj) + 4*sizeof(int) + sizeof(char) + sizeof(int*);
         CHECK(gc.get_heap_bytes() == live_bytes);
@@ -197,26 +198,26 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
         CHECK(**(r->d) == 4);
         gc.mark();
         my_obj *new_test = r.get_ptr();
-        CHECK(gc.isMarked(new_test) == true);
-        CHECK(gc.isMarked(new_test->a) == true);
-        CHECK(gc.isMarked(new_test->b) == true);
-        CHECK(gc.isMarked(new_test->c) == true);
-        CHECK(gc.isMarked(new_test->d) == true);
-        CHECK(gc.isMarked(*(new_test->d)) == true);
-        CHECK(gc.isMarked(new_test->f) == true);
-        CHECK(gc.isMarked(new_test->other_object) == true);
+        CHECK(gc.is_marked(new_test) == true);
+        CHECK(gc.is_marked(new_test->a) == true);
+        CHECK(gc.is_marked(new_test->b) == true);
+        CHECK(gc.is_marked(new_test->c) == true);
+        CHECK(gc.is_marked(new_test->d) == true);
+        CHECK(gc.is_marked(*(new_test->d)) == true);
+        CHECK(gc.is_marked(new_test->f) == true);
+        CHECK(gc.is_marked(new_test->other_object) == true);
         gc.sweep();
-        CHECK(gc.isMarked(new_test) == false);
-        CHECK(gc.isMarked(new_test->a) == false);
-        CHECK(gc.isMarked(new_test->b) == false);
-        CHECK(gc.isMarked(new_test->c) == false);
-        CHECK(gc.isMarked(new_test->d) == false);
-        CHECK(gc.isMarked(*(new_test->d)) == false);
-        CHECK(gc.isMarked(new_test->f) == false);
+        CHECK(gc.is_marked(new_test) == false);
+        CHECK(gc.is_marked(new_test->a) == false);
+        CHECK(gc.is_marked(new_test->b) == false);
+        CHECK(gc.is_marked(new_test->c) == false);
+        CHECK(gc.is_marked(new_test->d) == false);
+        CHECK(gc.is_marked(*(new_test->d)) == false);
+        CHECK(gc.is_marked(new_test->f) == false);
         CHECK(gc.get_metadata().size() == 8);
         CHECK(gc.get_heap_bytes() == live_bytes);   // reachable, nothing freed
-        CHECK(gc.isMarked(new_test->other_object) == false);
-        gc.collect();
+        CHECK(gc.is_marked(new_test->other_object) == false);
+        collect();
         CHECK(gc.get_metadata().size() == 8);
         CHECK(gc.get_heap_bytes() == live_bytes);
         delete new_test->not_garbage_collected;
@@ -231,14 +232,14 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep with cycles"){
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     {
-        my_obj* object1 = gc.allocate<my_obj>();
-        my_obj* object1_point_5 = gc.allocate<my_obj>();
-        my_obj* object2 = gc.allocate<my_obj>();
-        my_obj* object3 = gc.allocate<my_obj>();
-        my_obj* object4 = gc.allocate<my_obj>();
-        my_obj* object5 = gc.allocate<my_obj>();
+        my_obj* object1 = allocate<my_obj>();
+        my_obj* object1_point_5 = allocate<my_obj>();
+        my_obj* object2 = allocate<my_obj>();
+        my_obj* object3 = allocate<my_obj>();
+        my_obj* object4 = allocate<my_obj>();
+        my_obj* object5 = allocate<my_obj>();
         CHECK(gc.get_heap_bytes() == 6*sizeof(my_obj));
         object1->other_object = object1_point_5;
         object1_point_5->other_object = object2;
@@ -250,15 +251,15 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep with cycles"){
         {
             root<my_obj> r2 = object3;
             CHECK(gc.get_metadata().size() == 6);
-            gc.collect();
+            collect();
             CHECK(gc.get_metadata().size() == 5);
             CHECK(gc.get_heap_bytes() == 5*sizeof(my_obj));   // only object5 dropped
         }
-        gc.collect();
+        collect();
         CHECK(gc.get_metadata().size() == 3);
         CHECK(gc.get_heap_bytes() == 3*sizeof(my_obj));       // the 3/4 cycle is gone
     }
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);                      // and object1's cycle too
 }
@@ -269,7 +270,7 @@ TEST_SUITE_BEGIN("roots");
 
 TEST_CASE_FIXTURE(GCFixture, "root1"){
     root<int> a;
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     CHECK(gc.get_registry().size() == 1);
     {   
         root<int> rr = new int(3);
@@ -296,7 +297,7 @@ TEST_CASE_FIXTURE(GCFixture, "root1"){
 
 TEST_CASE_FIXTURE(GCFixture, "root2"){
     root<int> a = new int [10];
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     for(int i = 0; i < 10; ++i){
         a[i] = i+1;//*(a+i)
     }
@@ -323,7 +324,7 @@ TEST_CASE_FIXTURE(GCFixture, "root2"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "root3"){
-    collector &gc = *root_base::get_garbage_collector();
+    collector &gc = get_collector();
     {
         root<int> a = new int(6);
         root<int> b = new int(2);
@@ -359,14 +360,14 @@ TEST_CASE_FIXTURE(GCFixture, "root3"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "mark ignores null and non-GC children") {
-    root<my_obj> r = gc.allocate<my_obj>();
-    r->a = gc.allocate<int>();
+    root<my_obj> r = allocate<my_obj>();
+    r->a = allocate<int>();
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int));
     r->not_garbage_collected = new int(10);
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int));   // untracked child
 
     CHECK_NOTHROW(gc.mark());
-    CHECK(gc.isMarked(r->a) == true);
+    CHECK(gc.is_marked(r->a) == true);
 
     gc.sweep();
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int));   // both still reachable
@@ -382,12 +383,12 @@ TEST_CASE_FIXTURE(GCFixture, "deep chain does not overflow the stack") {
     constexpr int kDepth = 1000000;
 
     {
-        my_obj *head = gc.allocate<my_obj>();
+        my_obj *head = allocate<my_obj>();
         root<my_obj> r = head;
 
         my_obj *tail = head;
         for (int i = 1; i < kDepth; ++i) {
-            tail->other_object = gc.allocate<my_obj>();
+            tail->other_object = allocate<my_obj>();
             tail = tail->other_object;
         }
 
@@ -396,26 +397,26 @@ TEST_CASE_FIXTURE(GCFixture, "deep chain does not overflow the stack") {
 
         gc.mark();                       // stack overflow here if mark() recurses
 
-        CHECK(gc.isMarked(head) == true);
-        CHECK(gc.isMarked(tail) == true);   // the far end was reached
+        CHECK(gc.is_marked(head) == true);
+        CHECK(gc.is_marked(tail) == true);   // the far end was reached
 
         gc.sweep();
         CHECK(gc.get_metadata().size() == kDepth);   // all still reachable
         CHECK(gc.get_heap_bytes() == static_cast<size_t>(kDepth) * sizeof(my_obj));
     }
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);            // root gone, whole chain freed
     CHECK(gc.get_heap_bytes() == 0);                 // and every byte accounted for
 }
 
 TEST_CASE_FIXTURE(GCFixture, "shared child is marked once and freed once") {
     {
-        root<my_obj> r = gc.allocate<my_obj>();
+        root<my_obj> r = allocate<my_obj>();
 
-        my_obj *left  = gc.allocate<my_obj>();
-        my_obj *right = gc.allocate<my_obj>();
-        int *shared = gc.allocate<int>();
+        my_obj *left  = allocate<my_obj>();
+        my_obj *right = allocate<my_obj>();
+        int *shared = allocate<int>();
         *shared = 7;
 
         r->other_object = left;
@@ -428,9 +429,9 @@ TEST_CASE_FIXTURE(GCFixture, "shared child is marked once and freed once") {
         CHECK(gc.get_heap_bytes() == live_bytes);
 
         gc.mark();
-        CHECK(gc.isMarked(shared) == true);
-        CHECK(gc.isMarked(left)   == true);
-        CHECK(gc.isMarked(right)  == true);
+        CHECK(gc.is_marked(shared) == true);
+        CHECK(gc.is_marked(left)   == true);
+        CHECK(gc.is_marked(right)  == true);
 
         gc.sweep();
         CHECK(gc.get_metadata().size() == 4);   // nothing freed, all reachable
@@ -438,7 +439,7 @@ TEST_CASE_FIXTURE(GCFixture, "shared child is marked once and freed once") {
         CHECK(*shared == 7);                    // and the shared node is intact
     }
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);       // freed exactly once, no double free
     CHECK(gc.get_heap_bytes() == 0);            // a double subtract would underflow
 }
@@ -446,62 +447,62 @@ TEST_CASE_FIXTURE(GCFixture, "shared child is marked once and freed once") {
 
 TEST_CASE_FIXTURE(GCFixture, "shared child survives while any path remains") {
     {
-        root<my_obj> r = gc.allocate<my_obj>();
-        my_obj *left = gc.allocate<my_obj>();
-        int *shared = gc.allocate<int>();
+        root<my_obj> r = allocate<my_obj>();
+        my_obj *left = allocate<my_obj>();
+        int *shared = allocate<int>();
         *shared = 7;
 
         r->other_object = left;
         r->a = shared;
         left->a = shared;
 
-        gc.collect();
+        collect();
         CHECK(gc.get_metadata().size() == 3);
         CHECK(gc.get_heap_bytes() == 2*sizeof(my_obj) + sizeof(int));
 
         left->a = nullptr;              // one path gone, the other remains
-        gc.collect();
+        collect();
         CHECK(gc.get_metadata().size() == 3);
         CHECK(gc.get_heap_bytes() == 2*sizeof(my_obj) + sizeof(int));   // nothing freed
         CHECK(*shared == 7);
 
         r->a = nullptr;                 // last path gone
-        gc.collect();
+        collect();
         CHECK(gc.get_metadata().size() == 2);
         CHECK(gc.get_heap_bytes() == 2*sizeof(my_obj));                 // the int, exactly
     }
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 }
 
 TEST_CASE_FIXTURE(GCFixture, "self-referencing object") {
     {
-        root<my_obj> r = gc.allocate<my_obj>();
+        root<my_obj> r = allocate<my_obj>();
         r->other_object = r.get_ptr();      // points at itself
 
         CHECK(gc.get_metadata().size() == 1);
         CHECK(gc.get_heap_bytes() == sizeof(my_obj));
 
         gc.mark();                          // must terminate
-        CHECK(gc.isMarked(r.get_ptr()) == true);
+        CHECK(gc.is_marked(r.get_ptr()) == true);
 
         gc.sweep();
         CHECK(gc.get_metadata().size() == 1);
         CHECK(gc.get_heap_bytes() == sizeof(my_obj));
     }
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);   // unreachable self-loop is collected
     CHECK(gc.get_heap_bytes() == 0);
 }
 
 TEST_CASE_FIXTURE(GCFixture, "self-loop inside a larger cycle") {
     {
-        root<my_obj> r = gc.allocate<my_obj>();
-        my_obj *a = gc.allocate<my_obj>();
-        my_obj *b = gc.allocate<my_obj>();
+        root<my_obj> r = allocate<my_obj>();
+        my_obj *a = allocate<my_obj>();
+        my_obj *b = allocate<my_obj>();
 
         r->other_object = a;
         a->other_object = b;
@@ -509,31 +510,31 @@ TEST_CASE_FIXTURE(GCFixture, "self-loop inside a larger cycle") {
         a->another_object = a;      // and a self-loop on one of its members
 
         gc.mark();
-        CHECK(gc.isMarked(a) == true);
-        CHECK(gc.isMarked(b) == true);
+        CHECK(gc.is_marked(a) == true);
+        CHECK(gc.is_marked(b) == true);
         gc.sweep();
         CHECK(gc.get_metadata().size() == 3);
         CHECK(gc.get_heap_bytes() == 3*sizeof(my_obj));
     }
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 }
 
 TEST_CASE_FIXTURE(GCFixture, "marking twice is idempotent") {
-    root<my_obj> r = gc.allocate<my_obj>();
-    r->a = gc.allocate<int>();
+    root<my_obj> r = allocate<my_obj>();
+    r->a = allocate<int>();
     *(r->a) = 3;
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int));
 
     gc.mark();
-    CHECK(gc.isMarked(r.get_ptr()) == true);
-    CHECK(gc.isMarked(r->a) == true);
+    CHECK(gc.is_marked(r.get_ptr()) == true);
+    CHECK(gc.is_marked(r->a) == true);
 
     CHECK_NOTHROW(gc.mark());               // second pass over already-marked objects
-    CHECK(gc.isMarked(r.get_ptr()) == true);
-    CHECK(gc.isMarked(r->a) == true);
+    CHECK(gc.is_marked(r.get_ptr()) == true);
+    CHECK(gc.is_marked(r->a) == true);
     CHECK(gc.get_metadata().size() == 2);   // nothing added or lost
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int));   // mark never frees
 
@@ -546,28 +547,28 @@ TEST_CASE_FIXTURE(GCFixture, "collecting an empty heap is a no-op") {
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 
-    CHECK_NOTHROW(gc.collect());
+    CHECK_NOTHROW(collect());
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 
-    CHECK_NOTHROW(gc.collect());            // and again
+    CHECK_NOTHROW(collect());            // and again
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);        // no unsigned underflow
 }
 
 
 TEST_CASE_FIXTURE(GCFixture, "collecting with no roots frees everything") {
-    gc.allocate<my_obj>();
-    gc.allocate<int>();
-    gc.allocate<char>();
+    allocate<my_obj>();
+    allocate<int>();
+    allocate<char>();
     CHECK(gc.get_metadata().size() == 3);
     CHECK(gc.get_heap_bytes() == sizeof(my_obj) + sizeof(int) + sizeof(char));
 
-    gc.collect();
+    collect();
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 
-    CHECK_NOTHROW(gc.collect());            // sweep over a now-empty heap
+    CHECK_NOTHROW(collect());            // sweep over a now-empty heap
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
 }
@@ -581,9 +582,9 @@ int counted::destroyed = 0;
 
 TEST_CASE_FIXTURE(GCFixture, "sweep runs destructors") {
     counted::destroyed = 0;
-    gc.allocate<counted>();      // no root, immediately garbage
+    allocate<counted>();      // no root, immediately garbage
     CHECK(gc.get_heap_bytes() == sizeof(counted));
-    gc.collect();
+    collect();
     CHECK(counted::destroyed == 1);
     CHECK(gc.get_heap_bytes() == 0);
     counted::destroyed = 0;
@@ -594,33 +595,33 @@ TEST_SUITE_END();
 TEST_SUITE_BEGIN("normal mode");
 
 TEST_CASE_FIXTURE(GCFixture, "collects on the first allocation after reaching the threshold") {
-    gc.mode = collector::collection_mode::Normal;
+    gc.mode = collection_mode::Normal;
     const size_t threshold = gc.get_next_gc();
 
-    gc.allocate<char>(threshold - 1);   // garbage, no root
-    gc.allocate<char>();                // check sees threshold - 1 < threshold: no collection
+    allocate<char>(threshold - 1);   // garbage, no root
+    allocate<char>();                // check sees threshold - 1 < threshold: no collection
     CHECK(gc.get_metadata().size() == 2);
     CHECK(gc.get_heap_bytes() == threshold);
     CHECK(gc.get_next_gc() == threshold);   // untouched
 
-    gc.allocate<char>();                // check sees threshold >= threshold: collects, then allocates
+    allocate<char>();                // check sees threshold >= threshold: collects, then allocates
     CHECK(gc.get_metadata().size() == 1);          // both garbage chars freed, only the new one left
     CHECK(gc.get_heap_bytes() == sizeof(char));
     CHECK(gc.get_next_gc() == MB);                 // nothing survived: falls back to the MB floor
 }
 
 TEST_CASE_FIXTURE(GCFixture, "automatic collection keeps rooted objects") {
-    gc.mode = collector::collection_mode::Normal;
+    gc.mode = collection_mode::Normal;
     const size_t threshold = gc.get_next_gc();
 
-    root<my_obj> r = gc.allocate<my_obj>();
-    r->a = gc.allocate<int>(); *(r->a) = 7;
-    r->other_object = gc.allocate<my_obj>();
+    root<my_obj> r = allocate<my_obj>();
+    r->a = allocate<int>(); *(r->a) = 7;
+    r->other_object = allocate<my_obj>();
     const size_t live_bytes = 2*sizeof(my_obj) + sizeof(int);
 
-    gc.allocate<char>(threshold - live_bytes);   // garbage fills the heap up to the threshold
+    allocate<char>(threshold - live_bytes);   // garbage fills the heap up to the threshold
     CHECK(gc.get_heap_bytes() == threshold);
-    gc.allocate<char>();                         // triggers the collection
+    allocate<char>();                         // triggers the collection
 
     CHECK(gc.get_metadata().size() == 4);        // the 3 rooted objects + the new char
     CHECK(gc.get_heap_bytes() == live_bytes + sizeof(char));
@@ -629,13 +630,13 @@ TEST_CASE_FIXTURE(GCFixture, "automatic collection keeps rooted objects") {
 }
 
 TEST_CASE_FIXTURE(GCFixture, "next_gc grows by growth_factor when a lot survives") {
-    gc.mode = collector::collection_mode::Normal;
+    gc.mode = collection_mode::Normal;
     gc.set_growth_factor(3);            // non-default, so the test proves the factor is actually used
     const size_t threshold = gc.get_next_gc();
 
-    root<char> big = gc.allocate<char>(threshold - 1);   // rooted: survives the collection
-    gc.allocate<char>();                                  // garbage, heap reaches the threshold
-    gc.allocate<char>();                                  // triggers the collection
+    root<char> big = allocate<char>(threshold - 1);   // rooted: survives the collection
+    allocate<char>();                                  // garbage, heap reaches the threshold
+    allocate<char>();                                  // triggers the collection
 
     const size_t survived = threshold - 1;
     CHECK(gc.get_metadata().size() == 2);                 // big + the new char
@@ -660,7 +661,7 @@ TEST_CASE_FIXTURE(GCFixture, "set_growth_factor rejects factors outside (1, 100)
 }
 
 TEST_CASE_FIXTURE(GCFixture, "set_next_gc rejects values <= heap_bytes and clamps to MB") {
-    gc.allocate<char>(16);                      // heap_bytes = 16; Manual mode, so it stays
+    allocate<char>(16);                      // heap_bytes = 16; Manual mode, so it stays
     CHECK_THROWS_AS(gc.set_next_gc(16), std::invalid_argument);   // equal to heap_bytes
     CHECK_THROWS_AS(gc.set_next_gc(0), std::invalid_argument);
     CHECK(gc.get_next_gc() == MB);              // rejected values leave it unchanged
@@ -672,17 +673,17 @@ TEST_CASE_FIXTURE(GCFixture, "set_next_gc rejects values <= heap_bytes and clamp
 }
 
 TEST_CASE_FIXTURE(GCFixture, "manual mode ignores the threshold") {
-    gc.mode = collector::collection_mode::Manual;   // fixture default, set again to make the test explicit
+    gc.mode = collection_mode::Manual;   // fixture default, set again to make the test explicit
     const size_t threshold = gc.get_next_gc();
 
-    gc.allocate<char>(threshold);           // garbage, heap reaches the threshold
-    gc.allocate<char>(threshold);           // Normal would collect here
-    gc.allocate<char>();                    // and here
+    allocate<char>(threshold);           // garbage, heap reaches the threshold
+    allocate<char>(threshold);           // Normal would collect here
+    allocate<char>();                    // and here
     CHECK(gc.get_metadata().size() == 3);
     CHECK(gc.get_heap_bytes() == 2 * threshold + sizeof(char));
     CHECK(gc.get_next_gc() == threshold);   // never updated
 
-    gc.collect();                           // an explicit collect still frees everything
+    collect();                           // an explicit collect still frees everything
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
     CHECK(gc.get_next_gc() == threshold);   // collect() itself doesn't touch next_gc
@@ -693,14 +694,14 @@ TEST_SUITE_END();
 TEST_SUITE_BEGIN("stress mode");
 
 TEST_CASE_FIXTURE(GCFixture, "unrooted object is freed by the next allocation") {
-    gc.mode = collector::collection_mode::Stress;
+    gc.mode = collection_mode::Stress;
     counted::destroyed = 0;
 
-    gc.allocate<counted>();                 // no root
+    allocate<counted>();                 // no root
     CHECK(gc.get_metadata().size() == 1);   // its own allocation never collects it
     CHECK(counted::destroyed == 0);
 
-    gc.allocate<int>();                     // collects first: the counted is gone
+    allocate<int>();                     // collects first: the counted is gone
     CHECK(counted::destroyed == 1);
     CHECK(gc.get_metadata().size() == 1);   // only the int
     CHECK(gc.get_heap_bytes() == sizeof(int));
@@ -709,16 +710,16 @@ TEST_CASE_FIXTURE(GCFixture, "unrooted object is freed by the next allocation") 
 }
 
 TEST_CASE_FIXTURE(GCFixture, "rooted graph with a cycle survives every allocation") {
-    gc.mode = collector::collection_mode::Stress;
+    gc.mode = collection_mode::Stress;
 
-    root<my_obj> r = gc.allocate<my_obj>();
-    r->other_object = gc.allocate<my_obj>();        // r is rooted, so this call's collection keeps it
+    root<my_obj> r = allocate<my_obj>();
+    r->other_object = allocate<my_obj>();        // r is rooted, so this call's collection keeps it
     r->other_object->other_object = r.get_ptr();    // cycle back to the rooted object
-    r->a = gc.allocate<int>(); *(r->a) = 42;
+    r->a = allocate<int>(); *(r->a) = 42;
     const size_t live_bytes = 2*sizeof(my_obj) + sizeof(int);
 
     for (int i = 0; i < 100; ++i) {
-        gc.allocate<char>();                        // each call frees the previous char
+        allocate<char>();                        // each call frees the previous char
         CHECK(gc.get_metadata().size() == 4);       // the 3 live objects + this char
         CHECK(gc.get_heap_bytes() == live_bytes + sizeof(char));
     }
@@ -727,19 +728,19 @@ TEST_CASE_FIXTURE(GCFixture, "rooted graph with a cycle survives every allocatio
 }
 
 TEST_CASE_FIXTURE(GCFixture, "reassigned root's old target is freed on the following allocation") {
-    gc.mode = collector::collection_mode::Stress;
+    gc.mode = collection_mode::Stress;
     counted::destroyed = 0;
 
-    root<counted> r = gc.allocate<counted>();
+    root<counted> r = allocate<counted>();
     counted *first = r.get_ptr();
-    r = gc.allocate<counted>();             // collects before r moves: first is still rooted
+    r = allocate<counted>();             // collects before r moves: first is still rooted
     CHECK(counted::destroyed == 0);
     CHECK(gc.get_metadata().size() == 2);
     CHECK(r.get_ptr() != first);
 
-    gc.allocate<int>();                     // now first is unreachable
+    allocate<int>();                     // now first is unreachable
     CHECK(counted::destroyed == 1);
-    CHECK_NOTHROW(gc.isMarked(r.get_ptr()));   // the survivor is the second one, so first was freed
+    CHECK_NOTHROW(gc.is_marked(r.get_ptr()));   // the survivor is the second one, so first was freed
     CHECK(gc.get_metadata().size() == 2);   // the second counted + the int
     CHECK(gc.get_heap_bytes() == sizeof(counted) + sizeof(int));
     counted::destroyed = 0;

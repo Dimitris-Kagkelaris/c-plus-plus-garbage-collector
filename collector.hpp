@@ -1,12 +1,8 @@
 #pragma once
-#include <iostream>
 #include <vector>
 #include <unordered_map>
-#include <functional>
 #include <type_traits>
 #include <cstddef>
-#include <stdexcept>
-#include <algorithm>
 #include "models.hpp"
 
 class collector{
@@ -39,7 +35,7 @@ class collector{
     private:
         std::unordered_map<void*, struct allocation> metadata;
         std::vector<void**> registry;
-        
+
         size_t heap_bytes = 0;
         size_t next_gc = MB;
         double growth_factor = 2;
@@ -105,7 +101,4 @@ T* allocate(size_t array_size = 0) {
     return get_collector().allocate_raw<T>(array_size);
 }
 
-void collect(){
-    get_collector().mark();
-    get_collector().sweep();
-}
+void collect();

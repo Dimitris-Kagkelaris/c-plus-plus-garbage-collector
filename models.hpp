@@ -1,3 +1,6 @@
+#pragma once
+#include <functional>
+
 constexpr size_t MB = 1024*1024;
 
 enum class collection_mode {

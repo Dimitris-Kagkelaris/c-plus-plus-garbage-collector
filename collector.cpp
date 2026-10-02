@@ -3,6 +3,7 @@
 // #include <unordered_map>
 // #include <functional>
 // #include <type_traits>
+#include <stdexcept>
 #include "collector.hpp"
 #include "root.hpp"
 
@@ -59,6 +60,12 @@ void collector::sweep(){
         }
     }
 }
+
+void collect() {
+    get_collector().mark();
+    get_collector().sweep();
+}
+
 
 void collector::collect_if_needed(){
     switch (mode) {

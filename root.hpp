@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 #include "collector.hpp"
 
 template<typename T>
