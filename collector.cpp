@@ -5,7 +5,7 @@
 
 namespace gc {
     namespace detail {
-        collector& collector::get_collector() {
+        collector& collector::instance() {
             static collector garbage_collector;
             return garbage_collector;
         }
@@ -92,7 +92,7 @@ namespace gc {
     }
     
     void collect() {
-        detail::collector::get_collector().mark();
-        detail::collector::get_collector().sweep();
+        detail::collector::instance().mark();
+        detail::collector::instance().sweep();
     }    
 }

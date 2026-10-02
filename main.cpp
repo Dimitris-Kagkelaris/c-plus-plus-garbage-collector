@@ -12,7 +12,7 @@ int main(){
     // b = gc.allocate<int>();
     // int *c = (int *)b.get_ptr();
     gc::root<void> cc;
-    gc::detail::collector &gc = gc::detail::collector::get_collector();
+    gc::detail::collector &gc = gc::detail::collector::instance();
     switch (gc.mode) {
         case gc::detail::collection_mode::Manual:   cout << "Manual" << endl; break;
         case gc::detail::collection_mode::Normal:  cout << "Normal" << endl; break;

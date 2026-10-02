@@ -9,7 +9,7 @@ namespace gc {
     namespace detail {
         class collector{
             public:
-                static collector& get_collector();
+                static collector& instance();
 
                 collector(const collector &) = delete;
                 collector &operator=(const collector &) = delete;
@@ -104,7 +104,7 @@ namespace gc {
     
     template <typename T>
     T* allocate(size_t array_size = 0) {
-        return detail::collector::get_collector().allocate_raw<T>(array_size);
+        return detail::collector::instance().allocate_raw<T>(array_size);
     }
 
     void collect();
