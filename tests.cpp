@@ -5,6 +5,8 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
+using namespace gc;
+using namespace gc::detail;
 
 struct GCFixture {
     collector &gc = get_collector();

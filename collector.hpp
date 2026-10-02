@@ -101,7 +101,7 @@ namespace gc {
     
     template <typename T>
     T* allocate(size_t array_size = 0) {
-        return get_collector().allocate_raw<T>(array_size);
+        return detail::get_collector().allocate_raw<T>(array_size);
     }
 
     void collect();

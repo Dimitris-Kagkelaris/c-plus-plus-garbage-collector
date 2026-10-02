@@ -11,17 +11,17 @@ int main(){
     // root<void> b;
     // b = gc.allocate<int>();
     // int *c = (int *)b.get_ptr();
-    root<void> cc;
-    collector &gc = get_collector();
+    gc::root<void> cc;
+    gc::detail::collector &gc = gc::detail::get_collector();
     switch (gc.mode) {
-        case collection_mode::Manual:   cout << "Manual" << endl; break;
-        case collection_mode::Normal:  cout << "Normal" << endl; break;
-        case collection_mode::Stress:  cout << "Stress" << endl;
+        case gc::detail::collection_mode::Manual:   cout << "Manual" << endl; break;
+        case gc::detail::collection_mode::Normal:  cout << "Normal" << endl; break;
+        case gc::detail::collection_mode::Stress:  cout << "Stress" << endl;
     }
     int* a;
     {
-        root<int> b;
-        b = allocate<int>();
+        gc::root<int> b;
+        b = gc::allocate<int>();
         *b = 5;
         a = b.get_ptr();
         cout << *a << endl;

@@ -10,17 +10,17 @@ namespace gc {
 
         public:
             root(): ptr(nullptr) {
-                get_collector().add_to_registry(&ptr);
+                detail::get_collector().add_to_registry(&ptr);
             }
             ~root() {
-                get_collector().remove_from_registry();
+                detail::get_collector().remove_from_registry();
             }
             
             root(const root &other_root): ptr(other_root.get_ptr()) {
-                get_collector().add_to_registry(&ptr);
+                detail::get_collector().add_to_registry(&ptr);
             }
             root(T* const other_ptr): ptr(other_ptr) {
-                get_collector().add_to_registry(&ptr);
+                detail::get_collector().add_to_registry(&ptr);
             }
             
             T* get_ptr() const {
