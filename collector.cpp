@@ -3,10 +3,22 @@
 // #include <unordered_map>
 // #include <functional>
 // #include <type_traits>
-#include "collector.h"
-#include "root.h"
-using std::cout;
-using std::endl;
+#include "collector.hpp"
+#include "root.hpp"
+
+collector& get_collector() {
+    static collector gc;
+    return gc;
+}
+
+bool collector::is_marked(void *ptr){
+    if(metadata.find(ptr) != metadata.end()){
+        return metadata[ptr].marked;
+    }
+    else{
+        throw std::logic_error("Pointer not found in metadata!");
+    }
+}
 
 void collector::mark(){
     // we use vector instead of stack for performance
@@ -62,4 +74,18 @@ void collector::collect_if_needed(){
             }
             break;
     }
+}
+
+void collector::set_growth_factor(double factor) {
+    if (!(factor > 1.0 && factor < 100.0)){ // NaN is rejected too
+        throw std::invalid_argument("growth_factor must be > 1 and < 100");
+    }
+    growth_factor = factor;
+}
+
+void collector::set_next_gc(std::size_t bytes) {
+    if (bytes <= heap_bytes){
+        throw std::invalid_argument("next_gc must be greater than heap_bytes");
+    }
+    next_gc = std::max(bytes, MB);
 }

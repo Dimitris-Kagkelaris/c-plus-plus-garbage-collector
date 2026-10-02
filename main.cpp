@@ -1,6 +1,8 @@
 #include <iostream>
-#include "collector.h"
-#include "root.h"
+#include "collector.hpp"
+#include "root.hpp"
+using std::cout;
+using std::endl;
 
 int main(){
     // int *a = new int;
@@ -10,11 +12,16 @@ int main(){
     // b = gc.allocate<int>();
     // int *c = (int *)b.get_ptr();
     root<void> cc;
-    collector &gc = *cc.get_garbage_collector();
+    collector &gc = get_collector();
+    switch (gc.mode) {
+        case collection_mode::Manual:   cout << "Manual" << endl; break;
+        case collection_mode::Normal:  cout << "Normal" << endl; break;
+        case collection_mode::Stress:  cout << "Stress" << endl;
+    }
     int* a;
     {
         root<int> b;
-        b = gc.allocate<int>();
+        b = allocate<int>();
         *b = 5;
         a = b.get_ptr();
         cout << *a << endl;

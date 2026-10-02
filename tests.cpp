@@ -1,6 +1,6 @@
 #include "doctest.h"
-#include "root.h"
-#include "collector.h"
+#include "root.hpp"
+#include "collector.hpp"
 #include <cmath>
 
 struct GCFixture {

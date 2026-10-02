@@ -1,45 +1,24 @@
 #pragma once
-#include <iostream>
-#include <vector>
 #include "collector.hpp"
-using std::cout;
-using std::endl;
-
-// maybe not a good design fix later.
-class root_base {
-    protected:
-        inline static collector *garbage_collector = nullptr;
-    public:
-        root_base() {
-            if(garbage_collector == nullptr){
-                garbage_collector = new collector();
-            }
-        }
-
-        static collector* get_garbage_collector(){
-            if(garbage_collector == nullptr){
-                throw std::logic_error("Garbage collector not initialized!");
-            }
-            return garbage_collector;
-        }
-};
 
 template<typename T>
-class root : public root_base {
+class root {
+    private:
+        void* ptr;
+
     public:
-        root(): root_base(), ptr(nullptr) {
-            garbage_collector->add_to_registry(&ptr);
+        root(): ptr(nullptr) {
+            get_collector().add_to_registry(&ptr);
         }
         ~root() {
-            garbage_collector->remove_from_registry();
+            get_collector().remove_from_registry();
         }
         
-        
-        root(const root &other_root): root_base(), ptr(other_root.get_ptr()) {
-            garbage_collector->add_to_registry(&ptr);
+        root(const root &other_root): ptr(other_root.get_ptr()) {
+            get_collector().add_to_registry(&ptr);
         }
-        root(T* const other_ptr): root_base(), ptr(other_ptr) {
-            garbage_collector->add_to_registry(&ptr);
+        root(T* const other_ptr): ptr(other_ptr) {
+            get_collector().add_to_registry(&ptr);
         }
         
         T* get_ptr() const {
@@ -67,6 +46,7 @@ class root : public root_base {
             ptr = other_ptr;
             return *this;
         }
+
         const root& operator=(const root &other_root) {
             ptr = other_root.get_ptr();
             return *this;
@@ -93,8 +73,4 @@ class root : public root_base {
 
             return *(static_cast<U*>(ptr) + i);
         }
-        
-    private:
-        void *ptr;
-        
 };
