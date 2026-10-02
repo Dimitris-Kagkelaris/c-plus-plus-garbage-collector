@@ -2,76 +2,78 @@
 #include <stdexcept>
 #include "collector.hpp"
 
-template<typename T>
-class root {
-    private:
-        void* ptr;
+namespace gc {
+    template<typename T>
+    class root {
+        private:
+            void* ptr;
 
-    public:
-        root(): ptr(nullptr) {
-            get_collector().add_to_registry(&ptr);
-        }
-        ~root() {
-            get_collector().remove_from_registry();
-        }
-        
-        root(const root &other_root): ptr(other_root.get_ptr()) {
-            get_collector().add_to_registry(&ptr);
-        }
-        root(T* const other_ptr): ptr(other_ptr) {
-            get_collector().add_to_registry(&ptr);
-        }
-        
-        T* get_ptr() const {
-            return static_cast<T*>(ptr);
-        }
-
-        template<typename U = T>
-        U& operator*() const {
-            if(ptr == nullptr){
-                throw std::logic_error("Cannot dereference a null pointer!");
+        public:
+            root(): ptr(nullptr) {
+                get_collector().add_to_registry(&ptr);
             }
-
-            return *static_cast<U*>(ptr);
-        }
-
-        T* operator->() const {
-            if(ptr == nullptr){
-                throw std::logic_error("Cannot dereference a null pointer!");
+            ~root() {
+                get_collector().remove_from_registry();
             }
             
-            return static_cast<T*>(ptr);
-        }
-        
-        const root& operator=(T* const other_ptr) {
-            ptr = other_ptr;
-            return *this;
-        }
-
-        const root& operator=(const root &other_root) {
-            ptr = other_root.get_ptr();
-            return *this;
-        }
-
-        bool operator==(const root &other_root) const {
-            return ptr == other_root.get_ptr();
-        }
-
-        bool operator==(T* const other_ptr) const {
-            return ptr == other_ptr;
-        }
-
-        template <typename U>
-        bool operator!=(const U &other) const {
-            return !(*this == other);
-        }
-
-        template<typename U = T>
-        U& operator[](int i) const {
-            if(ptr == nullptr){
-                throw std::logic_error("Cannot dereference a null pointer!");
+            root(const root &other_root): ptr(other_root.get_ptr()) {
+                get_collector().add_to_registry(&ptr);
+            }
+            root(T* const other_ptr): ptr(other_ptr) {
+                get_collector().add_to_registry(&ptr);
+            }
+            
+            T* get_ptr() const {
+                return static_cast<T*>(ptr);
             }
 
-            return *(static_cast<U*>(ptr) + i);
-        }
-};
+            template<typename U = T>
+            U& operator*() const {
+                if(ptr == nullptr){
+                    throw std::logic_error("Cannot dereference a null pointer!");
+                }
+
+                return *static_cast<U*>(ptr);
+            }
+
+            T* operator->() const {
+                if(ptr == nullptr){
+                    throw std::logic_error("Cannot dereference a null pointer!");
+                }
+                
+                return static_cast<T*>(ptr);
+            }
+            
+            const root& operator=(T* const other_ptr) {
+                ptr = other_ptr;
+                return *this;
+            }
+
+            const root& operator=(const root &other_root) {
+                ptr = other_root.get_ptr();
+                return *this;
+            }
+
+            bool operator==(const root &other_root) const {
+                return ptr == other_root.get_ptr();
+            }
+
+            bool operator==(T* const other_ptr) const {
+                return ptr == other_ptr;
+            }
+
+            template <typename U>
+            bool operator!=(const U &other) const {
+                return !(*this == other);
+            }
+
+            template<typename U = T>
+            U& operator[](int i) const {
+                if(ptr == nullptr){
+                    throw std::logic_error("Cannot dereference a null pointer!");
+                }
+
+                return *(static_cast<U*>(ptr) + i);
+            }
+    };
+}
