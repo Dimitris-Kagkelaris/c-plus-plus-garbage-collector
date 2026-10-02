@@ -13,8 +13,6 @@ namespace gc {
 
                 collector(const collector &) = delete;
                 collector &operator=(const collector &) = delete;
-                collector(collector &&) = delete;
-                collector& operator=(collector &&) = delete;
                 
                 template <typename T>
                 T *allocate_raw(size_t array_size = 0);
@@ -36,11 +34,11 @@ namespace gc {
                 double get_growth_factor() { return growth_factor; }
                 void set_growth_factor(double factor);
                 
-                collection_mode mode;
+                collection_mode mode = collection_mode::Normal;
                 static constexpr size_t default_next_gc = MB;
                 static constexpr double default_growth_factor = 2;
             private:
-                collector(): mode(collection_mode::Normal) {}
+                collector() = default;
                 ~collector() = default;
                 std::unordered_map<void*, struct allocation> metadata;
                 std::vector<void**> registry;
