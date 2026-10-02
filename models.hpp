@@ -1,5 +1,7 @@
 #pragma once
+#include <cstddef>
 #include <functional>
+#include <vector>
 
 constexpr size_t MB = 1024*1024;
 

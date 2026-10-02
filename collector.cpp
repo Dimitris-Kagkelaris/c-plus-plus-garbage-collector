@@ -1,11 +1,7 @@
-// #include <iostream>
-// #include <vector>
-// #include <unordered_map>
-// #include <functional>
-// #include <type_traits>
+#include <algorithm>
 #include <stdexcept>
+#include <vector>
 #include "collector.hpp"
-#include "root.hpp"
 
 collector& get_collector() {
     static collector gc;

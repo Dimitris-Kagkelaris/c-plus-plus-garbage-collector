@@ -2,8 +2,9 @@
 #include "root.hpp"
 #include "collector.hpp"
 #include "models.hpp"
-#include <stdexcept>
 #include <cmath>
+#include <stdexcept>
+#include <vector>
 
 struct GCFixture {
     collector &gc = get_collector();
