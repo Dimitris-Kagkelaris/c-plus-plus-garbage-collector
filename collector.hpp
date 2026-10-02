@@ -9,24 +9,27 @@ namespace gc {
     namespace detail {
         class collector{
             public:
-                collector(collection_mode m = collection_mode::Normal): mode(m) {}
+                static collector& get_collector();
+
                 collector(const collector &) = delete;
                 collector &operator=(const collector &) = delete;
-
+                collector(collector &&) = delete;
+                collector& operator=(collector &&) = delete;
+                
                 template <typename T>
                 T *allocate_raw(size_t array_size = 0);
-
+                
                 void mark();
                 void sweep();
                 void collect_if_needed();
                 bool is_marked(void *ptr);
                 
                 std::unordered_map<void *, struct allocation> get_metadata(){ return metadata; }
-
+                
                 std::vector<void**> get_registry(){ return registry; }
                 void add_to_registry(void **ptr_to_root_ptr){ registry.push_back(ptr_to_root_ptr); }
                 void remove_from_registry(){ registry.pop_back(); }
-
+                
                 size_t get_heap_bytes() { return heap_bytes; }
                 size_t get_next_gc() { return next_gc; }
                 void set_next_gc(std::size_t bytes);
@@ -34,13 +37,17 @@ namespace gc {
                 void set_growth_factor(double factor);
                 
                 collection_mode mode;
+                static constexpr size_t default_next_gc = MB;
+                static constexpr double default_growth_factor = 2;
             private:
+                collector(): mode(collection_mode::Normal) {}
+                ~collector() = default;
                 std::unordered_map<void*, struct allocation> metadata;
                 std::vector<void**> registry;
 
                 size_t heap_bytes = 0;
-                size_t next_gc = MB;
-                double growth_factor = 2;
+                size_t next_gc = default_next_gc;
+                double growth_factor = default_growth_factor;
         };
 
         template <typename T>
@@ -95,13 +102,11 @@ namespace gc {
 
             return ptr;
         }
-
-        collector& get_collector();
     }
     
     template <typename T>
     T* allocate(size_t array_size = 0) {
-        return detail::get_collector().allocate_raw<T>(array_size);
+        return detail::collector::get_collector().allocate_raw<T>(array_size);
     }
 
     void collect();

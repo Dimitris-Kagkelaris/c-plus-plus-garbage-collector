@@ -5,16 +5,16 @@
 
 namespace gc {
     namespace detail {
-        collector& get_collector() {
-            static gc::detail::collector garbage_collector;
+        collector& collector::get_collector() {
+            static collector garbage_collector;
             return garbage_collector;
         }
 
         bool collector::is_marked(void *ptr){
-            if(metadata.find(ptr) != metadata.end()){
+            if(metadata.find(ptr) != metadata.end()) {
                 return metadata[ptr].marked;
             }
-            else{
+            else {
                 throw std::logic_error("Pointer not found in metadata!");
             }
         }
@@ -92,8 +92,7 @@ namespace gc {
     }
     
     void collect() {
-        detail::get_collector().mark();
-        detail::get_collector().sweep();
-    }
-    
+        detail::collector::get_collector().mark();
+        detail::collector::get_collector().sweep();
+    }    
 }

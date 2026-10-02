@@ -9,7 +9,7 @@ using namespace gc;
 using namespace gc::detail;
 
 struct GCFixture {
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     collection_mode previous_mode;
     GCFixture() {
         previous_mode = gc.mode;
@@ -17,9 +17,8 @@ struct GCFixture {
         REQUIRE(gc.get_registry().size() == 0);
         REQUIRE(gc.get_metadata().size() == 0);
         REQUIRE(gc.get_heap_bytes() == 0);
-        collector defaults;   // fresh collector: holds the defaults from collector.h
-        gc.set_growth_factor(defaults.get_growth_factor());
-        gc.set_next_gc(defaults.get_next_gc());
+        gc.set_growth_factor(collector::default_growth_factor);
+        gc.set_next_gc(collector::default_next_gc);
     }
     ~GCFixture() {
         gc.mark(); gc.sweep();
@@ -68,7 +67,7 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     // something simple
     {
         CHECK(gc.get_heap_bytes() == 0);
@@ -101,7 +100,7 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
 }
 TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     // something more complex
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     int **help_p, **help_q;
 
     {
@@ -173,7 +172,7 @@ class my_obj{
 };
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     {
         my_obj* test = allocate<my_obj>();
         CHECK(gc.get_heap_bytes() == sizeof(my_obj));
@@ -235,7 +234,7 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep with cycles"){
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     {
         my_obj* object1 = allocate<my_obj>();
         my_obj* object1_point_5 = allocate<my_obj>();
@@ -273,7 +272,7 @@ TEST_SUITE_BEGIN("roots");
 
 TEST_CASE_FIXTURE(GCFixture, "root1"){
     root<int> a;
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     CHECK(gc.get_registry().size() == 1);
     {   
         root<int> rr = new int(3);
@@ -300,7 +299,7 @@ TEST_CASE_FIXTURE(GCFixture, "root1"){
 
 TEST_CASE_FIXTURE(GCFixture, "root2"){
     root<int> a = new int [10];
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     for(int i = 0; i < 10; ++i){
         a[i] = i+1;//*(a+i)
     }
@@ -327,7 +326,7 @@ TEST_CASE_FIXTURE(GCFixture, "root2"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "root3"){
-    collector &gc = get_collector();
+    collector &gc = collector::get_collector();
     {
         root<int> a = new int(6);
         root<int> b = new int(2);
