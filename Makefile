@@ -21,8 +21,8 @@ main: main.o collector.o root.o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-tests.o collector.o root.o: collector.h
-tests.o collector.o root.o: root.h
+tests.o collector.o root.o: collector.hpp
+tests.o collector.o root.o: root.hpp
 
 doctest.o: doctest.cpp
 	$(CXX) -Wall -Wextra -std=c++17 -O1 -c $< -o $@

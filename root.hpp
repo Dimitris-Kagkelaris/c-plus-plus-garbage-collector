@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include "collector.h"
+#include "collector.hpp"
 using std::cout;
 using std::endl;
 
