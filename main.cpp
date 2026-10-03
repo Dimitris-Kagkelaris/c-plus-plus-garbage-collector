@@ -1,6 +1,5 @@
 #include <iostream>
-#include "collector.hpp"
-#include "root.hpp"
+#include "gc.hpp"
 using std::cout;
 using std::endl;
 
