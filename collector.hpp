@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <type_traits>
 #include <cstddef>
+#include <functional>
 #include "types.hpp"
 
 namespace gc {
@@ -14,6 +15,9 @@ namespace gc {
                     std::function<void(std::vector<void*> &)> trace;
                     std::function<size_t(void)> deallocate;
                 };
+
+                collector() = default;
+                ~collector() = default;
 
             public:
                 // returns a reference to the singleton instance of the collector
@@ -34,7 +38,7 @@ namespace gc {
                 // stress mode: collects
                 void collect_if_needed();
                 
-                const std::unordered_map<void*, struct allocation>& get_metadata(){ return metadata; }
+                const std::unordered_map<void*, allocation>& get_metadata(){ return metadata; }
                 const std::vector<void**>& get_registry(){ return registry; }
                 void add_to_registry(void** ptr_to_root_ptr){ registry.push_back(ptr_to_root_ptr); }
                 void remove_from_registry(){ registry.pop_back(); }
@@ -50,10 +54,7 @@ namespace gc {
                 static constexpr size_t default_next_gc = MB;
                 static constexpr double default_growth_factor = 2;
             private:
-                collector() = default;
-                ~collector() = default;
-
-                std::unordered_map<void*, struct allocation> metadata;
+                std::unordered_map<void*, allocation> metadata;
                 std::vector<void**> registry;
 
                 size_t heap_bytes = 0;
@@ -76,7 +77,7 @@ namespace gc {
 
             heap_bytes += (array_size == 0 ? 1 : array_size) * sizeof(T);
 
-            struct allocation alloc;
+            allocation alloc;
             alloc.marked = false;
             
             alloc.trace = [array_size, ptr](std::vector<void*> &children) -> void {
