@@ -3,12 +3,20 @@
 #include <unordered_map>
 #include <type_traits>
 #include <cstddef>
-#include "models.hpp"
+#include "types.hpp"
 
 namespace gc {
     namespace detail {
         class collector{
+            private:
+                struct allocation {
+                    bool marked;
+                    std::function<void(std::vector<void*> &)> trace;
+                    std::function<size_t(void)> deallocate;
+                };
+
             public:
+                // returns a reference to the singleton instance of the collector
                 static collector& instance();
 
                 collector(const collector &) = delete;
@@ -19,15 +27,19 @@ namespace gc {
                 
                 void mark();
                 void sweep();
-                void collect_if_needed();
                 bool is_marked(void *ptr);
                 
-                std::unordered_map<void *, struct allocation> get_metadata(){ return metadata; }
+                // manual mode: does nothing
+                // normal mode: collects if allocated bytes exceed some threshold
+                // stress mode: collects
+                void collect_if_needed();
                 
-                std::vector<void**> get_registry(){ return registry; }
-                void add_to_registry(void **ptr_to_root_ptr){ registry.push_back(ptr_to_root_ptr); }
+                const std::unordered_map<void*, struct allocation>& get_metadata(){ return metadata; }
+                const std::vector<void**>& get_registry(){ return registry; }
+                void add_to_registry(void** ptr_to_root_ptr){ registry.push_back(ptr_to_root_ptr); }
                 void remove_from_registry(){ registry.pop_back(); }
                 
+                // collection parameters for normal mode
                 size_t get_heap_bytes() { return heap_bytes; }
                 size_t get_next_gc() { return next_gc; }
                 void set_next_gc(std::size_t bytes);
@@ -40,6 +52,7 @@ namespace gc {
             private:
                 collector() = default;
                 ~collector() = default;
+
                 std::unordered_map<void*, struct allocation> metadata;
                 std::vector<void**> registry;
 
@@ -51,7 +64,7 @@ namespace gc {
         template <typename T>
         T* collector::allocate_raw(size_t array_size) {
             // maybe break down this function.
-            collect_if_needed();
+            collect_if_needed(); // move this somewhere else?
 
             T *ptr;
             if(array_size == 0) {
@@ -66,8 +79,7 @@ namespace gc {
             struct allocation alloc;
             alloc.marked = false;
             
-            alloc.trace = [array_size, ptr]() -> std::vector<void *>{
-                std::vector<void *> children;
+            alloc.trace = [array_size, ptr](std::vector<void*> &children) -> void {
                 if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
                     // primitive or enum. Nothing to trace
                 }
@@ -82,7 +94,6 @@ namespace gc {
                         }
                     }
                 }
-                return children;
             };
 
             

@@ -31,11 +31,13 @@ namespace gc {
                 }
             }
 
+            std::vector<void*> children;
             while(!mark_stack.empty()){
                 void* obj = mark_stack.back();
                 mark_stack.pop_back();
-                std::vector<void *> children = metadata[obj].trace();
-                for(void* child: children){
+                children.clear();
+                metadata[obj].trace(children);
+                for(void* child: children) {
                     // If the child has allocated something and it's not marked already
                     if(metadata.find(child) != metadata.end() && !metadata[child].marked){
                         metadata[child].marked = true;
@@ -47,7 +49,7 @@ namespace gc {
 
 
         void collector::sweep(){
-            for(auto it = metadata.begin(); it != metadata.end();){
+            for(auto it = metadata.begin(); it != metadata.end();) {
                 if(it->second.marked){
                     it->second.marked = false;
                     ++it;
@@ -60,7 +62,7 @@ namespace gc {
         }
 
 
-        void collector::collect_if_needed(){
+        void collector::collect_if_needed() {
             switch (mode) {
                 case collection_mode::Manual:
                     break;

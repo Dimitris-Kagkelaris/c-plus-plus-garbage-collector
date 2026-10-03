@@ -1,7 +1,7 @@
 #include "doctest.h"
 #include "root.hpp"
 #include "collector.hpp"
-#include "models.hpp"
+#include "types.hpp"
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -159,7 +159,7 @@ class my_obj{
         my_obj *other_object;
         my_obj *another_object;
         int* not_garbage_collected;
-        void trace(std::vector<void *> &children){
+        void trace(std::vector<void*> &children){
             children.push_back(a);
             children.push_back(b);
             children.push_back(c);

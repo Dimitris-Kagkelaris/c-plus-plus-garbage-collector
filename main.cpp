@@ -14,9 +14,9 @@ int main(){
     gc::root<void> cc;
     gc::detail::collector &gc = gc::detail::collector::instance();
     switch (gc.mode) {
-        case gc::detail::collection_mode::Manual:   cout << "Manual" << endl; break;
-        case gc::detail::collection_mode::Normal:  cout << "Normal" << endl; break;
-        case gc::detail::collection_mode::Stress:  cout << "Stress" << endl;
+        case gc::collection_mode::Manual:   cout << "Manual" << endl; break;
+        case gc::collection_mode::Normal:  cout << "Normal" << endl; break;
+        case gc::collection_mode::Stress:  cout << "Stress" << endl;
     }
     int* a;
     {
@@ -30,6 +30,6 @@ int main(){
     cout << *a << endl;
     *a = 6;
     cout << *a << endl;
-
+    // gc::detail::collector::instance().get
     // cout << *c << endl;
 }
