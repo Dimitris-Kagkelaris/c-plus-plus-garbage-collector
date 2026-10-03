@@ -10,22 +10,20 @@ using namespace gc::detail;
 
 struct GCFixture {
     collector &gc = collector::instance();
-    collection_mode previous_mode;
+    config previous_cfg;
     GCFixture() {
-        previous_mode = gc.mode;
-        gc.mode = collection_mode::Manual;
+        previous_cfg = get_config();
+        configure(config(collection_mode::Manual));
         REQUIRE(gc.get_registry().size() == 0);
         REQUIRE(gc.get_metadata().size() == 0);
         REQUIRE(gc.get_heap_bytes() == 0);
-        gc.set_growth_factor(collector::default_growth_factor);
-        gc.set_next_gc(collector::default_next_gc);
     }
     ~GCFixture() {
         gc.mark(); gc.sweep();
         CHECK(gc.get_registry().size() == 0);
         CHECK(gc.get_metadata().size() == 0);
         CHECK(gc.get_heap_bytes() == 0);
-        gc.mode = previous_mode;
+        configure(previous_cfg);
     }
 };
 
@@ -597,24 +595,24 @@ TEST_SUITE_END();
 TEST_SUITE_BEGIN("normal mode");
 
 TEST_CASE_FIXTURE(GCFixture, "collects on the first allocation after reaching the threshold") {
-    gc.mode = collection_mode::Normal;
-    const size_t threshold = gc.get_next_gc();
+    configure(config(collection_mode::Normal));
+    const size_t threshold = get_config().next_gc;
 
     allocate<char>(threshold - 1);   // garbage, no root
     allocate<char>();                // check sees threshold - 1 < threshold: no collection
     CHECK(gc.get_metadata().size() == 2);
     CHECK(gc.get_heap_bytes() == threshold);
-    CHECK(gc.get_next_gc() == threshold);   // untouched
+    CHECK(get_config().next_gc == threshold);   // untouched
 
     allocate<char>();                // check sees threshold >= threshold: collects, then allocates
     CHECK(gc.get_metadata().size() == 1);          // both garbage chars freed, only the new one left
     CHECK(gc.get_heap_bytes() == sizeof(char));
-    CHECK(gc.get_next_gc() == MB);                 // nothing survived: falls back to the MB floor
+    CHECK(get_config().next_gc == MB);                 // nothing survived: falls back to the MB floor
 }
 
 TEST_CASE_FIXTURE(GCFixture, "automatic collection keeps rooted objects") {
-    gc.mode = collection_mode::Normal;
-    const size_t threshold = gc.get_next_gc();
+    configure(config(collection_mode::Normal));
+    const size_t threshold = get_config().next_gc;
 
     root<my_obj> r = allocate<my_obj>();
     r->a = allocate<int>(); *(r->a) = 7;
@@ -628,13 +626,12 @@ TEST_CASE_FIXTURE(GCFixture, "automatic collection keeps rooted objects") {
     CHECK(gc.get_metadata().size() == 4);        // the 3 rooted objects + the new char
     CHECK(gc.get_heap_bytes() == live_bytes + sizeof(char));
     CHECK(*(r->a) == 7);                         // survivor still usable
-    CHECK(gc.get_next_gc() == MB);               // live heap is tiny: still the floor
+    CHECK(get_config().next_gc == MB);               // live heap is tiny: still the floor
 }
 
 TEST_CASE_FIXTURE(GCFixture, "next_gc grows by growth_factor when a lot survives") {
-    gc.mode = collection_mode::Normal;
-    gc.set_growth_factor(3);            // non-default, so the test proves the factor is actually used
-    const size_t threshold = gc.get_next_gc();
+    configure(config(collection_mode::Normal, default_next_gc, 3));   // non-default factor, so the test proves it is actually used
+    const size_t threshold = get_config().next_gc;
 
     root<char> big = allocate<char>(threshold - 1);   // rooted: survives the collection
     allocate<char>();                                  // garbage, heap reaches the threshold
@@ -643,52 +640,54 @@ TEST_CASE_FIXTURE(GCFixture, "next_gc grows by growth_factor when a lot survives
     const size_t survived = threshold - 1;
     CHECK(gc.get_metadata().size() == 2);                 // big + the new char
     CHECK(gc.get_heap_bytes() == survived + sizeof(char));
-    CHECK(gc.get_next_gc() == static_cast<size_t>(survived * gc.get_growth_factor()));
+    CHECK(get_config().next_gc == static_cast<size_t>(survived * get_config().growth_factor));
 }
 
-TEST_CASE_FIXTURE(GCFixture, "set_growth_factor rejects factors outside (1, 100) and NaN") {
-    const double factor = gc.get_growth_factor();
-    CHECK_THROWS_AS(gc.set_growth_factor(1.0), std::invalid_argument);   // lower boundary
-    CHECK_THROWS_AS(gc.set_growth_factor(0.5), std::invalid_argument);
-    CHECK_THROWS_AS(gc.set_growth_factor(-2), std::invalid_argument);
-    CHECK_THROWS_AS(gc.set_growth_factor(100.0), std::invalid_argument);   // upper boundary, exclusive
-    CHECK_THROWS_AS(gc.set_growth_factor(INFINITY), std::invalid_argument);
-    CHECK_THROWS_AS(gc.set_growth_factor(std::nan("")), std::invalid_argument);
-    CHECK(gc.get_growth_factor() == factor);    // rejected values leave it unchanged
+TEST_CASE_FIXTURE(GCFixture, "configure rejects growth factors outside (1, 100) and NaN") {
+    const collection_mode m = collection_mode::Manual;
+    const double factor = get_config().growth_factor;
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, 1.0)), std::invalid_argument);   // lower boundary
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, 0.5)), std::invalid_argument);
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, -2)), std::invalid_argument);
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, 100.0)), std::invalid_argument);   // upper boundary, exclusive
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, INFINITY)), std::invalid_argument);
+    CHECK_THROWS_AS(configure(config(m, default_next_gc, std::nan(""))), std::invalid_argument);
+    CHECK(get_config().growth_factor == factor);    // rejected values leave it unchanged
 
-    gc.set_growth_factor(1.5);
-    CHECK(gc.get_growth_factor() == 1.5);
-    gc.set_growth_factor(std::nextafter(100.0, 0.0));   // largest double below 100 is accepted
-    CHECK(gc.get_growth_factor() == std::nextafter(100.0, 0.0));
+    configure(config(m, default_next_gc, 1.5));
+    CHECK(get_config().growth_factor == 1.5);
+    configure(config(m, default_next_gc, std::nextafter(100.0, 0.0)));   // largest double below 100 is accepted
+    CHECK(get_config().growth_factor == std::nextafter(100.0, 0.0));
 }
 
-TEST_CASE_FIXTURE(GCFixture, "set_next_gc rejects values <= heap_bytes and clamps to MB") {
+TEST_CASE_FIXTURE(GCFixture, "configure rejects next_gc <= heap_bytes and clamps to MB") {
+    const collection_mode m = collection_mode::Manual;
     allocate<char>(16);                      // heap_bytes = 16; Manual mode, so it stays
-    CHECK_THROWS_AS(gc.set_next_gc(16), std::invalid_argument);   // equal to heap_bytes
-    CHECK_THROWS_AS(gc.set_next_gc(0), std::invalid_argument);
-    CHECK(gc.get_next_gc() == MB);              // rejected values leave it unchanged
+    CHECK_THROWS_AS(configure(config(m, 16)), std::invalid_argument);   // equal to heap_bytes
+    CHECK_THROWS_AS(configure(config(m, 0)), std::invalid_argument);
+    CHECK(get_config().next_gc == MB);              // rejected values leave it unchanged
 
-    gc.set_next_gc(17);                         // valid, but below the floor
-    CHECK(gc.get_next_gc() == MB);
-    gc.set_next_gc(3 * MB);
-    CHECK(gc.get_next_gc() == 3 * MB);
+    configure(config(m, 17));                   // valid, but below the floor
+    CHECK(get_config().next_gc == MB);
+    configure(config(m, 3 * MB));
+    CHECK(get_config().next_gc == 3 * MB);
 }
 
 TEST_CASE_FIXTURE(GCFixture, "manual mode ignores the threshold") {
-    gc.mode = collection_mode::Manual;   // fixture default, set again to make the test explicit
-    const size_t threshold = gc.get_next_gc();
+    configure(config(collection_mode::Manual));   // fixture default, set again to make the test explicit
+    const size_t threshold = get_config().next_gc;
 
     allocate<char>(threshold);           // garbage, heap reaches the threshold
     allocate<char>(threshold);           // Normal would collect here
     allocate<char>();                    // and here
     CHECK(gc.get_metadata().size() == 3);
     CHECK(gc.get_heap_bytes() == 2 * threshold + sizeof(char));
-    CHECK(gc.get_next_gc() == threshold);   // never updated
+    CHECK(get_config().next_gc == threshold);   // never updated
 
     collect();                           // an explicit collect still frees everything
     CHECK(gc.get_metadata().size() == 0);
     CHECK(gc.get_heap_bytes() == 0);
-    CHECK(gc.get_next_gc() == threshold);   // collect() itself doesn't touch next_gc
+    CHECK(get_config().next_gc == threshold);   // collect() itself doesn't touch next_gc
 }
 
 TEST_SUITE_END();
@@ -696,7 +695,7 @@ TEST_SUITE_END();
 TEST_SUITE_BEGIN("stress mode");
 
 TEST_CASE_FIXTURE(GCFixture, "unrooted object is freed by the next allocation") {
-    gc.mode = collection_mode::Stress;
+    configure(config(collection_mode::Stress));
     counted::destroyed = 0;
 
     allocate<counted>();                 // no root
@@ -707,12 +706,12 @@ TEST_CASE_FIXTURE(GCFixture, "unrooted object is freed by the next allocation") 
     CHECK(counted::destroyed == 1);
     CHECK(gc.get_metadata().size() == 1);   // only the int
     CHECK(gc.get_heap_bytes() == sizeof(int));
-    CHECK(gc.get_next_gc() == MB);          // Stress doesn't touch the threshold
+    CHECK(get_config().next_gc == MB);          // Stress doesn't touch the threshold
     counted::destroyed = 0;
 }
 
 TEST_CASE_FIXTURE(GCFixture, "rooted graph with a cycle survives every allocation") {
-    gc.mode = collection_mode::Stress;
+    configure(config(collection_mode::Stress));
 
     root<my_obj> r = allocate<my_obj>();
     r->other_object = allocate<my_obj>();        // r is rooted, so this call's collection keeps it
@@ -730,7 +729,7 @@ TEST_CASE_FIXTURE(GCFixture, "rooted graph with a cycle survives every allocatio
 }
 
 TEST_CASE_FIXTURE(GCFixture, "reassigned root's old target is freed on the following allocation") {
-    gc.mode = collection_mode::Stress;
+    configure(config(collection_mode::Stress));
     counted::destroyed = 0;
 
     root<counted> r = allocate<counted>();

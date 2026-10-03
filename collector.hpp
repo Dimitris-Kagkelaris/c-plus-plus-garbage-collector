@@ -7,6 +7,15 @@
 #include "types.hpp"
 
 namespace gc {
+    // collection parameters (threshold and growth factor only matter in normal mode)
+    struct config {
+        collection_mode mode;
+        size_t next_gc;
+        double growth_factor;
+        config(collection_mode m = collection_mode::Normal, size_t n = default_next_gc, double g = default_growth_factor)
+            : mode(m), next_gc(n), growth_factor(g) {}
+    };
+
     namespace detail {
         class collector{
             private:
@@ -43,23 +52,16 @@ namespace gc {
                 void add_to_registry(void** ptr_to_root_ptr){ registry.push_back(ptr_to_root_ptr); }
                 void remove_from_registry(){ registry.pop_back(); }
                 
-                // collection parameters for normal mode
                 size_t get_heap_bytes() { return heap_bytes; }
-                size_t get_next_gc() { return next_gc; }
-                void set_next_gc(std::size_t bytes);
-                double get_growth_factor() { return growth_factor; }
-                void set_growth_factor(double factor);
-                
-                collection_mode mode = collection_mode::Normal;
-                static constexpr size_t default_next_gc = MB;
-                static constexpr double default_growth_factor = 2;
+                const config& get_config(){ return cfg; }
+                void configure(const config& c);
+
             private:
                 std::unordered_map<void*, allocation> metadata;
                 std::vector<void**> registry;
-
+                
+                config cfg;
                 size_t heap_bytes = 0;
-                size_t next_gc = default_next_gc;
-                double growth_factor = default_growth_factor;
         };
 
         template <typename T>
@@ -120,4 +122,9 @@ namespace gc {
     }
 
     void collect();
+    
+    // returns the current configuration of the collector
+    config get_config();
+    // validates and applies the configuration to the collector
+    void configure(const config& c);
 }

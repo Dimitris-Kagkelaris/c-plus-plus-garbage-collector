@@ -63,38 +63,44 @@ namespace gc {
 
 
         void collector::collect_if_needed() {
-            switch (mode) {
+            switch (cfg.mode) {
                 case collection_mode::Manual:
                     break;
                 case collection_mode::Stress:
                     collect();
                     break;
                 case collection_mode::Normal:
-                    if(heap_bytes >= next_gc){
+                    if(heap_bytes >= cfg.next_gc){
                         collect();
-                        next_gc = std::max(static_cast<size_t>(heap_bytes * growth_factor), MB);
+                        cfg.next_gc = std::max(static_cast<size_t>(heap_bytes * cfg.growth_factor), MB);
                     }
                     break;
             }
         }
 
-        void collector::set_growth_factor(double factor) {
-            if (!(factor > 1.0 && factor < 100.0)){ // NaN is rejected too
+        void collector::configure(const config& c) {
+            if (!(c.growth_factor > 1.0 && c.growth_factor < 100.0)){ // NaN is rejected too
                 throw std::invalid_argument("growth_factor must be > 1 and < 100");
             }
-            growth_factor = factor;
-        }
-
-        void collector::set_next_gc(std::size_t bytes) {
-            if (bytes <= heap_bytes){
+            if (c.next_gc <= heap_bytes){
                 throw std::invalid_argument("next_gc must be greater than heap_bytes");
             }
-            next_gc = std::max(bytes, MB);
+            cfg.mode = c.mode;
+            cfg.growth_factor = c.growth_factor;
+            cfg.next_gc = std::max(c.next_gc, MB);
         }
     }
     
     void collect() {
         detail::collector::instance().mark();
         detail::collector::instance().sweep();
-    }    
+    }
+
+    config get_config(){
+        return detail::collector::instance().get_config();
+    }
+
+    void configure(const config& c){
+        detail::collector::instance().configure(c);
+    }
 }
