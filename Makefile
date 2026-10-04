@@ -1,4 +1,4 @@
-CXX = g++-16
+CXX = clang++
 CXXFLAGS = -Wall -Wextra -Wsign-conversion -std=c++17
 
 .PHONY: all debug leakcheck clean

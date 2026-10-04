@@ -82,11 +82,13 @@ namespace gc {
             allocation alloc;
             alloc.marked = false;
             
-            alloc.trace = [array_size, ptr](std::vector<void*> &children) -> void {
-                if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
-                    // primitive or enum. Nothing to trace
-                }
-                else{
+
+            if constexpr (std::is_scalar_v<T> && !std::is_pointer_v<T>) {
+                // primitive or enum. Nothing to trace
+                alloc.trace = [](std::vector<void*> &) {};
+            }
+            else {
+                alloc.trace = [array_size, ptr](std::vector<void*> &children) {
                     const int loop_size = array_size == 0 ? 1 : array_size;
                     for(int i = 0; i < loop_size; ++i){
                         if constexpr (std::is_pointer_v<T>) {
@@ -96,8 +98,8 @@ namespace gc {
                             ptr[i].trace(children);
                         }
                     }
-                }
-            };
+                };
+            }
 
             
             alloc.deallocate = [array_size, ptr]() -> size_t {

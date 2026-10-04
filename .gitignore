@@ -7,3 +7,4 @@ doctest.h
 doctest.cpp
 notes.txt
 gc_optimizations.png
+build/
