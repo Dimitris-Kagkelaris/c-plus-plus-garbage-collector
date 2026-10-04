@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 {release|leakcheck|debug}" >&2
+    echo "usage: $0 {release|leakcheck|debug|clean}" >&2
     exit 1
 }
 
@@ -11,6 +11,11 @@ mode=$1
 
 # Run from the project root no matter where the script is called from
 cd "$(dirname "$0")"
+
+if [[ $mode == clean ]]; then
+    rm -rf build
+    exit 0
+fi
 
 case "$mode" in
     release) opts=(-DOPTIMIZE=ON  -DTESTS=OFF -DSANITIZE=OFF) ;;
