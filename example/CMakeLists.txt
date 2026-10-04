@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-project(C++GC LANGUAGES CXX)
+project(example_for_C++_GC LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(.. GC)
+add_subdirectory(.. cppgc_build)
 
 add_executable(example example.cpp)
-target_link_libraries(example PRIVATE GC)
+target_link_libraries(example PRIVATE cppgc)

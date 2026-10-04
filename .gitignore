@@ -2,4 +2,5 @@
 .DS_Store
 notes.txt
 gc_optimizations.png
-build*
+build
+example-build
