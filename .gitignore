@@ -1,10 +1,5 @@
-main
-tests
 *.dSYM
 .DS_Store
-*.o
-doctest.h
-doctest.cpp
 notes.txt
 gc_optimizations.png
-build/
+build
