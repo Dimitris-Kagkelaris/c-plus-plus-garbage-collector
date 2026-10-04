@@ -1,3 +1,4 @@
+# Deprecated
 CXX = clang++
 CXXFLAGS = -Wall -Wextra -Wsign-conversion -std=c++17
 
