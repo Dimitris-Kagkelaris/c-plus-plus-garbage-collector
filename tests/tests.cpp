@@ -1,7 +1,5 @@
 #include "doctest.h"
-#include "root.hpp"
-#include "collector.hpp"
-#include "types.hpp"
+#include "cppgc.hpp"
 #include <cmath>
 #include <stdexcept>
 #include <vector>
