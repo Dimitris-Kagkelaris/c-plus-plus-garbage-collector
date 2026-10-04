@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 {release|tests|debug}" >&2
+    echo "usage: $0 {release|leakcheck|debug}" >&2
     exit 1
 }
 
@@ -14,7 +14,7 @@ cd "$(dirname "$0")"
 
 case "$mode" in
     release) opts=(-DOPTIMIZE=ON  -DTESTS=OFF -DSANITIZE=OFF) ;;
-    tests)   opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=OFF) ;;
+    leakcheck) opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=OFF) ;;
     debug)   opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=ON)  ;;
     *)       usage ;;
 esac
@@ -26,4 +26,8 @@ cmake --build "$dir" --parallel
 
 if [[ $mode != release ]]; then
     ctest --test-dir "$dir" --output-on-failure
+fi
+
+if [[ $mode == leakcheck ]]; then
+    MallocStackLogging=1 leaks --atExit -- "$dir/tests/cppgc_tests"
 fi
