@@ -8,7 +8,8 @@ add_library(cppgc src/collector.cpp)
 target_include_directories(cppgc PUBLIC . include)
 
 target_compile_features(cppgc PUBLIC cxx_std_17)
-target_compile_options(cppgc PRIVATE -Wall -Wextra -Wsign-conversion)
+set(CPPGC_WARNINGS -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wcast-align)
+target_compile_options(cppgc PRIVATE ${CPPGC_WARNINGS})
 
 option(CPPGC_BUILD_TESTS "build the tests" ${PROJECT_IS_TOP_LEVEL})
 if(CPPGC_BUILD_TESTS)

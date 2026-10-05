@@ -89,8 +89,8 @@ namespace gc {
             }
             else {
                 alloc.trace = [array_size, ptr](std::vector<void*> &children) {
-                    const int loop_size = array_size == 0 ? 1 : array_size;
-                    for(int i = 0; i < loop_size; ++i){
+                    const size_t loop_size = array_size == 0 ? 1 : array_size;
+                    for(size_t i = 0; i < loop_size; ++i){
                         if constexpr (std::is_pointer_v<T>) {
                             children.push_back(ptr[i]);
                         }

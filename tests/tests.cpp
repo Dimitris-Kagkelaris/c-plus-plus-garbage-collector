@@ -638,7 +638,7 @@ TEST_CASE_FIXTURE(GCFixture, "next_gc grows by growth_factor when a lot survives
     const size_t survived = threshold - 1;
     CHECK(gc.get_metadata().size() == 2);                 // big + the new char
     CHECK(gc.get_heap_bytes() == survived + sizeof(char));
-    CHECK(get_config().next_gc == static_cast<size_t>(survived * get_config().growth_factor));
+    CHECK(get_config().next_gc == static_cast<size_t>(static_cast<double>(survived) * get_config().growth_factor));
 }
 
 TEST_CASE_FIXTURE(GCFixture, "configure rejects growth factors outside (1, 100) and NaN") {

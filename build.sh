@@ -29,7 +29,8 @@ dir="build/$mode"
 cmake -S . -B "$dir" "${opts[@]}"
 cmake --build "$dir" --parallel
 
-ctest --test-dir "$dir" --output-on-failure
+# full stack traces for UBSan reports (no effect without the sanitizers)
+UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir "$dir" --output-on-failure
 
 if [[ $mode == leakcheck ]]; then
     MallocStackLogging=1 leaks --atExit -- "$dir/tests/cppgc_tests"

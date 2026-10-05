@@ -72,7 +72,7 @@ namespace gc {
                 case collection_mode::Normal:
                     if(heap_bytes >= cfg.next_gc){
                         collect();
-                        cfg.next_gc = std::max(static_cast<size_t>(heap_bytes * cfg.growth_factor), MB);
+                        cfg.next_gc = std::max(static_cast<size_t>(static_cast<double>(heap_bytes) * cfg.growth_factor), MB);
                     }
                     break;
             }
