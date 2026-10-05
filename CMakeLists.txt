@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.21...4.1)
 project(cppgc LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_library(cppgc src/collector.cpp)
 
 target_include_directories(cppgc PUBLIC . include)

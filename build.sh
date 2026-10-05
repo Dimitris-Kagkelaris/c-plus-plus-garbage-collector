@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 {release|leakcheck|debug|clean}" >&2
+    echo "usage: $0 {release|test|leakcheck|debug|clean}" >&2
     exit 1
 }
 
@@ -19,6 +19,7 @@ fi
 
 case "$mode" in
     release) opts=(-DOPTIMIZE=ON  -DTESTS=OFF -DSANITIZE=OFF) ;;
+    test)    opts=(-DOPTIMIZE=ON  -DTESTS=ON  -DSANITIZE=OFF) ;;
     leakcheck) opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=OFF) ;;
     debug)   opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=ON)  ;;
     *)       usage ;;
