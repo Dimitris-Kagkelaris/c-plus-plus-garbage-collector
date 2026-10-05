@@ -18,9 +18,9 @@ if [[ $mode == clean ]]; then
 fi
 
 case "$mode" in
-    release)   opts=(-DCMAKE_BUILD_TYPE=Release -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=OFF) ;;
-    leakcheck) opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=OFF) ;;
-    debug)     opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=ON)  ;;
+    release)   opts=(-DCMAKE_BUILD_TYPE=Release -DCPLUSPLUSGC_BUILD_TESTS=ON -DCPLUSPLUSGC_SANITIZE=OFF) ;;
+    leakcheck) opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPLUSPLUSGC_BUILD_TESTS=ON -DCPLUSPLUSGC_SANITIZE=OFF) ;;
+    debug)     opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPLUSPLUSGC_BUILD_TESTS=ON -DCPLUSPLUSGC_SANITIZE=ON)  ;;
     *)         usage ;;
 esac
 
@@ -33,5 +33,5 @@ cmake --build "$dir" --parallel
 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir "$dir" --output-on-failure
 
 if [[ $mode == leakcheck ]]; then
-    MallocStackLogging=1 leaks --atExit -- "$dir/tests/cppgc_tests"
+    MallocStackLogging=1 leaks --atExit -- "$dir/tests/cplusplusgc_tests"
 fi

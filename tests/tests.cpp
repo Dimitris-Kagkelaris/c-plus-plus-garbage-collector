@@ -1,5 +1,5 @@
 #include "doctest.h"
-#include "cppgc.hpp"
+#include "cplusplusgc.hpp"
 #include <cmath>
 #include <stdexcept>
 #include <vector>

@@ -91,25 +91,25 @@ Requires a C++17 compiler and, for the CMake options, CMake 3.21 or newer. Place
 * **CMake subdirectory** (recommended):
 
   ```cmake
-  add_subdirectory(cppgc cppgc_build)
-  target_link_libraries(my_app PRIVATE cppgc)
+  add_subdirectory(cplusplusgc cplusplusgc_build)
+  target_link_libraries(my_app PRIVATE cplusplusgc)
   ```
 
 * **Prebuilt static library:**
 
   ```bash
-  cmake -S cppgc -B cppgc/_build -DCMAKE_BUILD_TYPE=Release
-  cmake --build cppgc/_build
-  g++ -std=c++17 main.cpp -Icppgc -Icppgc/include -Lcppgc/_build -lcppgc -o my_app
+  cmake -S cplusplusgc -B cplusplusgc/_build -DCMAKE_BUILD_TYPE=Release
+  cmake --build cplusplusgc/_build
+  g++ -std=c++17 main.cpp -Icplusplusgc -Icplusplusgc/include -Lcplusplusgc/_build -lcplusplusgc -o my_app
   ```
 
 * **Compile the sources directly:**
 
   ```bash
-  g++ -std=c++17 main.cpp cppgc/src/*.cpp -Icppgc -Icppgc/include -o my_app
+  g++ -std=c++17 main.cpp cplusplusgc/src/*.cpp -Icplusplusgc -Icplusplusgc/include -o my_app
   ```
 
-Then `#include <cppgc.hpp>`.
+Then `#include <cplusplusgc.hpp>`.
 
 ## Development
 
