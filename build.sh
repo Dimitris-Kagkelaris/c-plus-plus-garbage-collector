@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 {release|test|leakcheck|debug|clean}" >&2
+    echo "usage: $0 {release|leakcheck|debug|clean}" >&2
     exit 1
 }
 
@@ -18,10 +18,9 @@ if [[ $mode == clean ]]; then
 fi
 
 case "$mode" in
-    release)   opts=(-DCMAKE_BUILD_TYPE=Release -DTESTS=OFF -DSANITIZE=OFF) ;;
-    test)      opts=(-DCMAKE_BUILD_TYPE=Release -DTESTS=ON  -DSANITIZE=OFF) ;;
-    leakcheck) opts=(-DCMAKE_BUILD_TYPE=Debug   -DTESTS=ON  -DSANITIZE=OFF) ;;
-    debug)     opts=(-DCMAKE_BUILD_TYPE=Debug   -DTESTS=ON  -DSANITIZE=ON)  ;;
+    release)   opts=(-DCMAKE_BUILD_TYPE=Release -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=OFF) ;;
+    leakcheck) opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=OFF) ;;
+    debug)     opts=(-DCMAKE_BUILD_TYPE=Debug   -DCPPGC_BUILD_TESTS=ON -DCPPGC_SANITIZE=ON)  ;;
     *)         usage ;;
 esac
 
@@ -30,9 +29,7 @@ dir="build/$mode"
 cmake -S . -B "$dir" "${opts[@]}"
 cmake --build "$dir" --parallel
 
-if [[ $mode != release ]]; then
-    ctest --test-dir "$dir" --output-on-failure
-fi
+ctest --test-dir "$dir" --output-on-failure
 
 if [[ $mode == leakcheck ]]; then
     MallocStackLogging=1 leaks --atExit -- "$dir/tests/cppgc_tests"
