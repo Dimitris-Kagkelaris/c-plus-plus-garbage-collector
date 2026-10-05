@@ -134,7 +134,7 @@ All library code compiles with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -
 
 * **Metadata overhead** - Each allocation also costs a hash map node and two `std::function` objects.
 
-* **Tested platforms** - Developed and tested with Apple Clang on macOS. The library is standard C++17, but the `build` scripts require bash, and the sanitizer and warning flags assume GCC or Clang.
+* **Tested platforms** - Tested with Apple Clang on macOS and GCC on Linux. The library is standard C++17, but the build scripts require bash, and the sanitizer and warning flags assume GCC or Clang.
 
 ## Future Work
 
