@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+cmake -S . -B _build-example
+cmake --build _build-example --parallel

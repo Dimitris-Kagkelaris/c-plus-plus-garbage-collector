@@ -2,7 +2,7 @@
 .DS_Store
 notes.txt
 gc_optimizations.png
-build
-build-example/
+_build
+_build-example
 README.md
 old_makefile

@@ -13,7 +13,7 @@ mode=$1
 cd "$(dirname "$0")"
 
 if [[ $mode == clean ]]; then
-    rm -rf build
+    rm -rf _build
     exit 0
 fi
 
@@ -24,7 +24,7 @@ case "$mode" in
     *)         usage ;;
 esac
 
-dir="build/$mode"
+dir="_build/$mode"
 
 cmake -S . -B "$dir" "${opts[@]}"
 cmake --build "$dir" --parallel
