@@ -63,7 +63,6 @@ TEST_CASE_FIXTURE(GCFixture, "normal case"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
-    collector &gc = collector::instance();
     // something simple
     {
         CHECK(gc.get_heap_bytes() == 0);
@@ -96,7 +95,6 @@ TEST_CASE_FIXTURE(GCFixture, "mark and sweep"){
 }
 TEST_CASE_FIXTURE(GCFixture, "deep mark and sweep (complex)"){
     // something more complex
-    collector &gc = collector::instance();
     int **help_p, **help_q;
 
     {
@@ -168,7 +166,6 @@ class my_obj{
 };
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
-    collector &gc = collector::instance();
     {
         my_obj* test = allocate<my_obj>();
         CHECK(gc.get_heap_bytes() == sizeof(my_obj));
@@ -230,7 +227,6 @@ TEST_CASE_FIXTURE(GCFixture, "object mark and sweep"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "object mark and sweep with cycles"){
-    collector &gc = collector::instance();
     {
         my_obj* object1 = allocate<my_obj>();
         my_obj* object1_point_5 = allocate<my_obj>();
@@ -268,7 +264,6 @@ TEST_SUITE_BEGIN("roots");
 
 TEST_CASE_FIXTURE(GCFixture, "root1"){
     root<int> a;
-    collector &gc = collector::instance();
     CHECK(gc.get_registry().size() == 1);
     {   
         root<int> rr = new int(3);
@@ -282,7 +277,7 @@ TEST_CASE_FIXTURE(GCFixture, "root1"){
         int a;
         char b;
         bool c;
-        t(int a, char b, bool c): a(a), b(b), c(c) {}
+        t(int a_, char b_, bool c_): a(a_), b(b_), c(c_) {}
     };
     root<struct t> r = new struct t(1, 'a', true);
     CHECK(((*r).a == 1));
@@ -295,7 +290,6 @@ TEST_CASE_FIXTURE(GCFixture, "root1"){
 
 TEST_CASE_FIXTURE(GCFixture, "root2"){
     root<int> a = new int [10];
-    collector &gc = collector::instance();
     for(int i = 0; i < 10; ++i){
         a[i] = i+1;//*(a+i)
     }
@@ -322,7 +316,6 @@ TEST_CASE_FIXTURE(GCFixture, "root2"){
 }
 
 TEST_CASE_FIXTURE(GCFixture, "root3"){
-    collector &gc = collector::instance();
     {
         root<int> a = new int(6);
         root<int> b = new int(2);
