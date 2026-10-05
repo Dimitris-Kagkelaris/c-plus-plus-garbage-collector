@@ -1,23 +1,8 @@
-<!-- Ways to build after you put the library in your project dir
-1) g++ -std=c++17 test.cpp cppgc/src/*.cpp -Icppgc -Icppgc/include -o app
-2) cmake -S . -B build
-    cmake --build build
-    g++ -std=c++17 test.cpp -Icppgc -Icppgc/include -Lcppgc/build -lcppgc -o test
-
-3) 
-
-add_subdirectory(cppgc cppgc_build)
-
-add_executable(test test.cpp)
-target_link_libraries(test PRIVATE cppgc) -->
-
 # Garbage Collector for C++
 
-A precise mark and sweep garbage collector library for C++
+A precise mark and sweep garbage collector library for C++17. Objects are allocated through the garbage collector, kept alive by explicit roots, and freed automatically once nothing reachable points to them.
 
-### example (very small one i think)
-
-<!-- syntax thingy that wraps code -->
+```cpp
 gc::root<int> p = gc::allocate<int>();
 *p = 1;
 
@@ -28,55 +13,135 @@ for(int i = 0; i < 5; ++i){
 
 {
     gc::root<int> q = gc::allocate<int>();
-    *q = 7
+    *q = 7;
 }
-// at collection time 1 will survive but 7 will get deleted
-// look at example/example.cpp for a more detailed example
-<!--  -->
 
+gc::collect(); // 7 is freed, 1 and numbers survive
+```
 
-## Architecture
+See [`example/example.cpp`](example/example.cpp) for a complete program, including a traced struct and the collection modes.
 
-The work is distributed across 2 core classes.
+## Features
 
-* **root<T>** — provides raw pointer wrapping allowing the keeping track of roots pointing to live objects in the heap.
+* **Precise** - only pointers that objects report through `trace()` are followed.
 
-* **collector** - provides the allocation and collection (mark & sweep) functionalities alongside configuration of the frequency of the allocation.
+* **Collection modes** - collect when the heap passes a threshold (`Normal`), before every allocation (`Stress`), or only on `gc::collect()` (`Manual`).
+
+* **Works with raw pointers** - pointers to memory the collector didn't allocate are ignored, so GC objects can also hold regular `new`'d memory.
 
 ## Usage
 
-* **gc::root<T>** to create the GC pointer
-this supports most raw pointer functionalities
+### Allocating and rooting
 
-* **gc::allocate<T>()** to allocate an object of type T
+| API                     | Description                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `gc::allocate<T>()`     | Allocates a single value-initialized `T` and returns a `T*`.                   |
+| `gc::allocate<T>(n)`    | Allocates an array of `n` value-initialized `T`s (`n > 0`) and returns a `T*`. |
+| `gc::root<T>`           | A pointer wrapper that keeps the object it points to alive.                    |
+| `gc::collect()`         | Runs a full collection immediately.                                            |
+| `gc::get_config()`      | Returns the current collector configuration.                                   |
+| `gc::configure(config)` | Validates and applies a new configuration.                                     |
 
-* **gc::allocate<T>(n)** to allocate an array of objects of type T (n must be positive)
+A `gc::root<T>` supports `*`, `->`, `[]`, `==` / `!=` (against roots or raw pointers) and assignment from a `T*` or another root. The raw pointer is available through `get_ptr()`. Dereferencing a null root throws `std::logic_error`.
 
-* **gc::collect()** to trigger an explicit collection
+### Traceable types
 
-* **gc::get_config()** and **gc::configure(const config &c)** to tune the parameters of the collection. Parameters to be set are:
+Every class type allocated with `gc::allocate` must have a `trace` member that pushes each GC pointer it holds:
 
-    * collection_mode: 
-        * Normal (triggers collection when allocated number of bytes exceeds a threshold)
-        * Stress (triggers collection after every allocation)
-        * Manual (triggers collection only on gc::collect() calls)
+```cpp
+void trace(std::vector<void*> &children);
+```
 
-    * next_gc: the threshold until next allocation. Defaults to 1 MiB and can be set to anything higher
+Primitive types, enums and pointers need nothing: `gc::allocate<int>()` has nothing to trace, and `gc::allocate<int*>()` traces its pointee automatically. For arrays, `trace` is called automatically on every element.
 
-    * growth_factor: the ratio by which next_gc is calculated after a collection. Specifically after collection: next_gc = live_heap_bytes * growth_factor
+### Configuration
 
-gc::get_config() returns a struct containing the current parameters and configure sets the new parameters according to the struct passed
+```cpp
+gc::configure(gc::config(gc::collection_mode::Normal, 8 * gc::MB, 1.5));
+```
+
+| Field           | Default  | Description                                                                                                                                                  |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mode`          | `Normal` | **`Normal`** collects when the heap reaches `next_gc`. **`Stress`** collects before every allocation. **`Manual`** collects only on `gc::collect()`.          |
+| `next_gc`       | 1 MiB    | Heap size in bytes that triggers the next collection. Values below 1 MiB are raised to 1 MiB. After each collection it becomes `max(live_bytes * growth_factor, 1 MiB)`. |
+| `growth_factor` | `2.0`    | How much the threshold grows relative to the surviving heap after a collection.                                                                              |
+
+In `Normal` mode, `configure` throws `std::invalid_argument` if `growth_factor` isn't strictly between 1 and 100, or if `next_gc` isn't greater than the current heap size. The other modes don't use these values, so they aren't checked there.
+
+## Rules
+
+The collector only knows what roots and `trace()` tell it. Breaking these rules is undefined behavior (typically a use after free).
+
+* **Roots are local variables, destroyed in reverse order of creation.** Roots are registered on a stack, and each root removes the most recently registered entry when it is destroyed. Don't store roots in containers (`std::vector`, `std::optional`, ...), on the heap (`new`, `std::unique_ptr`), in `static` or `thread_local` variables, or as members of GC-allocated objects. Don't pass roots by value or return named roots; pass `T*` or `const root<T>&` instead.
+
+* **Root a new object before the next allocation.** Any allocation can trigger a collection, so an object that isn't reachable from a root yet can be freed.
+
+* **`trace()` must report every GC pointer.** An unreported pointer looks like garbage to the collector, and its object gets freed while still in use.
+
+* **Destructors must not touch other GC objects.** Unreachable objects are destroyed in no particular order, so anything a destructor points to may already be freed. Destructors may still release resources the object owns itself, and they must not call `gc::allocate`.
+
+* **Pointers must point to the start of an object.** A pointer into the middle of an array, to a member, or to a non-first base class doesn't keep the object alive.
+
+* **Single-threaded only.** The collector is a global singleton with no synchronization.
 
 ## Building
 
-The project uses CMake version ...
+Requires a C++17 compiler and, for the CMake options, CMake 3.21 or newer. Place the library in your project directory, then use one of the following:
 
-Suggested usage is to include the entire project in your working directory and 
+* **CMake subdirectory** (recommended):
 
-1) add to CMake via add_subdirectory(cppgc cppgc_build) and target_link_libraries(some_project PRIVATE cppgc)
+  ```cmake
+  add_subdirectory(cppgc cppgc_build)
+  target_link_libraries(my_app PRIVATE cppgc)
+  ```
 
-2) Without CMake g++ -std=c++17 some_project.cpp cppgc/src/*.cpp -Icppgc -Icppgc/include -o some_project
+* **Prebuilt static library:**
+
+  ```bash
+  cmake -S cppgc -B cppgc/_build -DCMAKE_BUILD_TYPE=Release
+  cmake --build cppgc/_build
+  g++ -std=c++17 main.cpp -Icppgc -Icppgc/include -Lcppgc/_build -lcppgc -o my_app
+  ```
+
+* **Compile the sources directly:**
+
+  ```bash
+  g++ -std=c++17 main.cpp cppgc/src/*.cpp -Icppgc -Icppgc/include -o my_app
+  ```
+
+Then `#include <cppgc.hpp>`.
+
+## Development
+
+Tests use [doctest](https://github.com/doctest/doctest). The `build` script configures, builds and runs them:
+
+* **`./build release`** - optimized build.
+
+* **`./build debug`** - Debug build with AddressSanitizer and UndefinedBehaviorSanitizer.
+
+* **`./build leakcheck`** - Debug build checked with macOS `leaks`. macOS only.
+
+* **`./build clean`** - removes the build directories.
+
+All library code compiles with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wcast-align`. The example builds with `example/build-example`.
 
 
+## Limitations
 
+* **Default-constructible types only** - `gc::allocate` uses `new T()`, so constructor arguments can't be passed.
 
+* **No cleanup at exit** - like most garbage collectors, objects still alive when the program exits aren't destroyed. The OS reclaims the memory, but their destructors don't run.
+
+* **Metadata overhead** - Each allocation also costs a hash map node and two `std::function` objects.
+
+* **Tested platforms** - Developed and tested with Apple Clang on macOS. The library is standard C++17, but the `build` scripts require bash, and the sanitizer and warning flags assume GCC or Clang.
+
+## Future Work
+
+* Roots that can live anywhere: in containers, on the heap, and passed by value.
+* Replacing the metadata hash map with a linked list.
+
+## Author
+
+**Dimitrios Kagkelaris**<br>
+GitHub: [Dimitris-Kagkelaris](https://github.com/Dimitris-Kagkelaris)
