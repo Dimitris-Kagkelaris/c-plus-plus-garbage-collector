@@ -18,11 +18,11 @@ if [[ $mode == clean ]]; then
 fi
 
 case "$mode" in
-    release) opts=(-DOPTIMIZE=ON  -DTESTS=OFF -DSANITIZE=OFF) ;;
-    test)    opts=(-DOPTIMIZE=ON  -DTESTS=ON  -DSANITIZE=OFF) ;;
-    leakcheck) opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=OFF) ;;
-    debug)   opts=(-DOPTIMIZE=OFF -DTESTS=ON  -DSANITIZE=ON)  ;;
-    *)       usage ;;
+    release)   opts=(-DCMAKE_BUILD_TYPE=Release -DTESTS=OFF -DSANITIZE=OFF) ;;
+    test)      opts=(-DCMAKE_BUILD_TYPE=Release -DTESTS=ON  -DSANITIZE=OFF) ;;
+    leakcheck) opts=(-DCMAKE_BUILD_TYPE=Debug   -DTESTS=ON  -DSANITIZE=OFF) ;;
+    debug)     opts=(-DCMAKE_BUILD_TYPE=Debug   -DTESTS=ON  -DSANITIZE=ON)  ;;
+    *)         usage ;;
 esac
 
 dir="build/$mode"
