@@ -43,7 +43,7 @@ namespace gc {
                 bool is_marked(void *ptr);
                 
                 // manual mode: does nothing
-                // normal mode: collects if allocated bytes exceed some threshold
+                // normal mode: collects if allocated bytes exceed a threshold
                 // stress mode: collects
                 void collect_if_needed();
                 
