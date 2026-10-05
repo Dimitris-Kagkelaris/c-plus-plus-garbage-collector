@@ -10,7 +10,7 @@ namespace gc {
 
     enum class collection_mode {
         Normal,     // collect when heap_bytes reaches next_gc
-        Stress,     // collect after every allocation
+        Stress,     // collect before every allocation
         Manual      // collect only on explicit collect() calls
     };
 }

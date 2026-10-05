@@ -642,7 +642,7 @@ TEST_CASE_FIXTURE(GCFixture, "next_gc grows by growth_factor when a lot survives
 }
 
 TEST_CASE_FIXTURE(GCFixture, "configure rejects growth factors outside (1, 100) and NaN") {
-    const collection_mode m = collection_mode::Manual;
+    const collection_mode m = collection_mode::Normal;
     const double factor = get_config().growth_factor;
     CHECK_THROWS_AS(configure(config(m, default_next_gc, 1.0)), std::invalid_argument);   // lower boundary
     CHECK_THROWS_AS(configure(config(m, default_next_gc, 0.5)), std::invalid_argument);
@@ -659,7 +659,7 @@ TEST_CASE_FIXTURE(GCFixture, "configure rejects growth factors outside (1, 100) 
 }
 
 TEST_CASE_FIXTURE(GCFixture, "configure rejects next_gc <= heap_bytes and clamps to MB") {
-    const collection_mode m = collection_mode::Manual;
+    const collection_mode m = collection_mode::Normal;
     allocate<char>(16);                      // heap_bytes = 16; Manual mode, so it stays
     CHECK_THROWS_AS(configure(config(m, 16)), std::invalid_argument);   // equal to heap_bytes
     CHECK_THROWS_AS(configure(config(m, 0)), std::invalid_argument);

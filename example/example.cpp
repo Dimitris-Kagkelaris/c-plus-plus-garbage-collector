@@ -1,34 +1,60 @@
 #include <iostream>
-// #include "gc.hpp"
+#include <vector>
 #include <cppgc.hpp>
 using std::cout;
 using std::endl;
 
+// every class type allocated with gc::allocate needs a trace function that reports its GC pointers
+struct node {
+    int value = 0;
+    node* next = nullptr;
+
+    ~node() { cout << "freed node " << value << endl; }
+
+    void trace(std::vector<void*> &children){
+        children.push_back(next);
+    }
+};
+
+struct blob {
+    static inline int freed = 0;
+    int data[4] = {};
+
+    ~blob() { ++freed; }
+
+    void trace(std::vector<void*> &){}
+};
+
 int main(){
-    // int *a = new int;
-    // a[0] = 5;
-    // std::cout << a[0] << std::endl;
-    // root<void> b;
-    // b = gc.allocate<int>();
-    // int *c = (int *)b.get_ptr();
-    gc::root<void> cc;
-    switch (gc::get_config().mode) {
-        case gc::collection_mode::Manual:   cout << "Manual" << endl; break;
-        case gc::collection_mode::Normal:  cout << "Normal" << endl; break;
-        case gc::collection_mode::Stress:  cout << "Stress" << endl;
+    gc::configure(gc::config(gc::collection_mode::Manual)); // collect only on gc::collect()
+
+    gc::root<node> head = gc::allocate<node>();
+    head->value = 1;
+    head->next = gc::allocate<node>();
+    head->next->value = 2;
+
+    gc::root<int> numbers = gc::allocate<int>(5);
+    for(int i = 0; i < 5; ++i){
+        numbers[i] = i * i;
     }
-    int* a;
+
     {
-        gc::root<int> b;
-        b = gc::allocate<int>();
-        *b = 5;
-        a = b.get_ptr();
-        cout << *a << endl;
+        gc::root<node> temp = gc::allocate<node>();
+        temp->value = 3;
     }
-    // gc.collect();
-    cout << *a << endl;
-    *a = 6;
-    cout << *a << endl;
-    // gc::detail::collector::instance().get
-    // cout << *c << endl;
+
+    gc::collect(); // free node 3
+    cout << "list: " << head->value << " -> " << head->next->value << endl;
+    cout << "numbers[4] = " << numbers[4] << endl;
+
+    head->next = nullptr;
+    gc::collect(); // free node 2
+
+
+    gc::configure(gc::config(gc::collection_mode::Normal)); // collects once the heap passes a threshold or on gc::collect()
+    for(int i = 0; i < 1'000'000; ++i){
+        gc::allocate<blob>();
+    }
+    cout << "blobs freed without calling collect(): " << blob::freed << endl;
+    // the rest wait for the next collection
 }

@@ -79,11 +79,13 @@ namespace gc {
         }
 
         void collector::configure(const config& c) {
-            if (!(c.growth_factor > 1.0 && c.growth_factor < 100.0)){ // NaN is rejected too
-                throw std::invalid_argument("growth_factor must be > 1 and < 100");
-            }
-            if (c.next_gc <= heap_bytes){
-                throw std::invalid_argument("next_gc must be greater than heap_bytes");
+            if (c.mode == collection_mode::Normal){
+                if (!(c.growth_factor > 1.0 && c.growth_factor < 100.0)){ // NaN is rejected too
+                    throw std::invalid_argument("growth_factor must be > 1 and < 100");
+                }
+                if (c.next_gc <= heap_bytes){
+                    throw std::invalid_argument("next_gc must be greater than heap_bytes");
+                }
             }
             cfg.mode = c.mode;
             cfg.growth_factor = c.growth_factor;
